@@ -1,0 +1,19 @@
+{
+  "name": "autosteerplus",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "fix:ios": "bun scripts/fix-ios-spm.mjs",
+    "cap:sync": "bun run build && bunx cap sync && bun run fix:ios",
+    "ios:open": "bun run cap:sync && bunx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1"
+  }
+}
