@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.autosteerplus.app',
-  appName: 'AutoSteer Plus',
+  appName: 'autosteerplus',
   webDir: 'dist',
   plugins: {
     CapacitorCookies: {

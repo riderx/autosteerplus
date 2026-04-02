@@ -1,4 +1,4 @@
-# AutoSteer Plus
+# autosteerplus
 
 This project wraps the published `https://fsd.teslaandroid.com` portal in a Capacitor iOS app and bridges the portal's Web Bluetooth calls to native BLE through `@capacitor-community/bluetooth-le`.
 

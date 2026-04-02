@@ -1,5 +1,13 @@
 // @ts-nocheck
 // Preserves the working portal behavior while the UI is hosted by Vue.
+import {
+  assignPortalActions,
+  defaultAuthNote,
+  defaultPasskeySetupNote,
+  defaultPasswordGateNote,
+  portalView,
+} from './view-model';
+import { watch } from 'vue';
 const BLE_SERVICE_UUID = "74d9d2db-4d0a-4f23-9acb-5528df6b9800";
 const BLE_STATUS_UUID = "74d9d2db-4d0a-4f23-9acb-5528df6b9801";
 const BLE_CONFIG_UUID = "74d9d2db-4d0a-4f23-9acb-5528df6b9802";
@@ -23,6 +31,9 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const PASSWORD_MIN_LENGTH = 15;
 let initialized = false;
+const dom = {
+  loginChallengeWidget: null,
+};
 
 const state = {
   authenticated: false,
@@ -65,77 +76,6 @@ const state = {
   turnstileRenderRetryCount: 0,
 };
 
-const elements = {
-  authShell: document.querySelector("#auth-shell"),
-  appShell: document.querySelector("#app-shell"),
-  logoutButton: document.querySelector("#logout-button"),
-  changePasswordButton: document.querySelector("#change-password-button"),
-  loginPanel: document.querySelector("#login-panel"),
-  loginForm: document.querySelector("#login-form"),
-  loginEmail: document.querySelector("#login-email"),
-  loginPassword: document.querySelector("#login-password"),
-  authNote: document.querySelector("#auth-note"),
-  loginFeedback: document.querySelector("#login-feedback"),
-  loginChallengeShell: document.querySelector("#login-challenge-shell"),
-  loginChallengeWidget: document.querySelector("#login-challenge-widget"),
-  loginChallengeNote: document.querySelector("#login-challenge-note"),
-  loginPasskeyButton: document.querySelector("#login-passkey-button"),
-  passwordGate: document.querySelector("#password-gate"),
-  passwordGateForm: document.querySelector("#password-gate-form"),
-  passwordGateNote: document.querySelector("#password-gate-note"),
-  passwordGateCurrentWrap: document.querySelector("#password-gate-current-wrap"),
-  passwordGateCurrent: document.querySelector("#password-gate-current-password"),
-  passwordGateNew: document.querySelector("#password-gate-new-password"),
-  passwordGateConfirm: document.querySelector("#password-gate-confirm-password"),
-  passwordGateCancel: document.querySelector("#password-gate-cancel"),
-  dashboard: document.querySelector("#dashboard"),
-  adminPanel: document.querySelector("#admin-panel"),
-  shopifySyncButton: document.querySelector("#shopify-sync-button"),
-  shopifySyncResult: document.querySelector("#shopify-sync-result"),
-  adminCreateUserForm: document.querySelector("#admin-create-user-form"),
-  adminCreateUserEmail: document.querySelector("#admin-create-user-email"),
-  adminCreateUserPassword: document.querySelector("#admin-create-user-password"),
-  adminCreateUserGroups: document.querySelector("#admin-create-user-groups"),
-  adminCreateUserResult: document.querySelector("#admin-create-user-result"),
-  reloadCustomersButton: document.querySelector("#reload-customers-button"),
-  adminUserNote: document.querySelector("#admin-user-note"),
-  adminUserList: document.querySelector("#admin-user-list"),
-  reloadPackagesButton: document.querySelector("#reload-packages-button"),
-  adminPackageNote: document.querySelector("#admin-package-note"),
-  adminPackageList: document.querySelector("#admin-package-list"),
-  passkeySetupGate: document.querySelector("#passkey-setup-gate"),
-  passkeySetupNote: document.querySelector("#passkey-setup-note"),
-  adminRegisterPasskeyButton: document.querySelector("#admin-register-passkey-button"),
-  adminPasskeyLogoutButton: document.querySelector("#admin-passkey-logout-button"),
-  reloadPasskeysButton: document.querySelector("#reload-passkeys-button"),
-  registerPasskeyButton: document.querySelector("#register-passkey-button"),
-  passkeyNote: document.querySelector("#passkey-note"),
-  passkeyList: document.querySelector("#passkey-list"),
-  connectButton: document.querySelector("#connect-button"),
-  disconnectButton: document.querySelector("#disconnect-button"),
-  refreshButton: document.querySelector("#refresh-button"),
-  rebootButton: document.querySelector("#reboot-button"),
-  connectionPill: document.querySelector("#connection-pill"),
-  hooksToggle: document.querySelector("#hooks-toggle"),
-  configNote: document.querySelector("#config-note"),
-  installOptions: document.querySelector("#install-options"),
-  packageNote: document.querySelector("#package-note"),
-  otaAbortButton: document.querySelector("#ota-abort-button"),
-  progressLabel: document.querySelector("#progress-label"),
-  progressPercent: document.querySelector("#progress-percent"),
-  progressBar: document.querySelector("#progress-bar"),
-  eventLog: document.querySelector("#event-log"),
-  clearLogButton: document.querySelector("#clear-log-button"),
-  deviceName: document.querySelector("#device-name"),
-  firmwareVersion: document.querySelector("#firmware-version"),
-  canState: document.querySelector("#can-state"),
-  hooksState: document.querySelector("#hooks-state"),
-  profileState: document.querySelector("#profile-state"),
-  speedOffsetState: document.querySelector("#speed-offset-state"),
-  fsdFlagState: document.querySelector("#fsd-flag-state"),
-  otaState: document.querySelector("#ota-state"),
-};
-
 function readCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") ?? "";
 }
@@ -162,10 +102,8 @@ function scheduleTurnstileRenderRetry() {
   }
 
   if (state.turnstileRenderRetryCount >= 40) {
-    setText(
-      elements.loginChallengeNote,
-      "Complete the security check to continue signing in. If the widget does not appear, reload the page."
-    );
+    portalView.loginChallengeNote =
+      "Complete the security check to continue signing in. If the widget does not appear, reload the page.";
     return;
   }
 
@@ -177,7 +115,7 @@ function scheduleTurnstileRenderRetry() {
 }
 
 function hasAdminPanelAccess() {
-  return state.authenticated && Boolean(elements.adminPanel);
+  return state.authenticated;
 }
 
 function passkeySetupGateVisible() {
@@ -188,22 +126,67 @@ function interactionGateVisible() {
   return passwordGateVisible() || passkeySetupGateVisible();
 }
 
-function setText(element, value) {
-  if (element) {
-    element.textContent = value;
-  }
+function updatePortalControls() {
+  const blockedByInteraction = !state.authenticated || interactionGateVisible();
+  const isAdmin = hasAdminPanelAccess() && !state.adminPasskeySetupRequired;
+
+  portalView.connectDisabled = blockedByInteraction || state.connected;
+  portalView.disconnectDisabled = !state.connected || passwordGateVisible();
+  portalView.refreshDisabled = !state.connected || passwordGateVisible();
+  portalView.rebootDisabled = !state.connected || state.updating || passwordGateVisible();
+  portalView.hooksDisabled = !state.connected || state.updating || passwordGateVisible();
+  portalView.abortOtaDisabled = !state.connected || !state.updating || passwordGateVisible();
+  portalView.connectionLabel = state.connected ? "Connected" : "Disconnected";
+  portalView.connectionOnline = state.connected;
+  portalView.configNote = state.connected
+    ? "Changes are written to preferences immediately."
+    : "Connect to the device before editing persistent settings.";
+  portalView.shopifySyncDisabled = !isAdmin || state.syncingCustomers;
+  portalView.reloadPackagesDisabled = !isAdmin || packageActionInProgress();
+  portalView.reloadCustomersDisabled = !isAdmin || state.loadingCustomers || customerActionInProgress();
+  portalView.reloadPasskeysDisabled = !state.authenticated || state.loadingPasskeys || state.deletingPasskeyId !== 0;
+  portalView.registerPasskeyDisabled = !state.authenticated;
+  portalView.adminRegisterPasskeyDisabled = !state.authenticated;
 }
 
-function setChecked(element, checked) {
-  if (element) {
-    element.checked = checked;
+function updateAuthUi() {
+  const authenticated = state.authenticated;
+  const passwordGateShown = passwordGateVisible();
+  const passwordRequiresCurrent = passwordGateRequiresCurrentPassword();
+  const isAdmin = hasAdminPanelAccess() && !state.adminPasskeySetupRequired;
+
+  portalView.authenticated = authenticated;
+  portalView.showLogoutButton = authenticated;
+  portalView.showChangePasswordButton = authenticated;
+  portalView.passwordGateVisible = passwordGateShown;
+  portalView.passwordGateRequiresCurrent = passwordRequiresCurrent;
+  portalView.passkeySetupVisible = passkeySetupGateVisible();
+  portalView.adminVisible = authenticated && isAdmin;
+  portalView.adminCreateUserDisabled = !isAdmin || state.creatingCustomer;
+
+  if (passwordGateShown) {
+    portalView.passwordGateNote = state.mustChangePassword
+      ? `Your temporary password must be replaced before you can use the portal. Use at least ${PASSWORD_MIN_LENGTH} characters.`
+      : "Enter your current password, then choose a new password with at least 15 characters.";
+  } else if (portalView.passwordGateNote === "") {
+    portalView.passwordGateNote = defaultPasswordGateNote();
   }
+
+  if (!isAdmin) {
+    state.deletingPackageId = "";
+    state.savingPackageGroupsId = "";
+    state.creatingCustomer = false;
+    state.updatingCustomerId = 0;
+    state.savingCustomerGroupsId = 0;
+    state.deletingCustomerId = 0;
+  }
+
+  updatePortalControls();
+  renderPasskeys();
 }
 
-function setHidden(element, hidden) {
-  if (element) {
-    element.hidden = hidden;
-  }
+function setLoginFeedback(message = "") {
+  portalView.loginFeedback = message;
 }
 
 function base64UrlToUint8Array(value) {
@@ -226,7 +209,7 @@ function uint8ArrayToBase64Url(bytes) {
 }
 
 function ensureTurnstileRendered() {
-  if (!state.turnstileConfigured || !elements.loginChallengeWidget) {
+  if (!state.turnstileConfigured || !dom.loginChallengeWidget) {
     return;
   }
   if (state.turnstileWidgetId) {
@@ -234,31 +217,31 @@ function ensureTurnstileRendered() {
     return;
   }
   if (typeof window.turnstile?.render !== "function") {
-    setText(elements.loginChallengeNote, "Loading the security check...");
+    portalView.loginChallengeNote = "Loading the security check...";
     scheduleTurnstileRenderRetry();
     return;
   }
 
   try {
-    state.turnstileWidgetId = window.turnstile.render(elements.loginChallengeWidget, {
+    state.turnstileWidgetId = window.turnstile.render(dom.loginChallengeWidget, {
       sitekey: readTurnstileSiteKey(),
       callback: (token) => {
         state.turnstileToken = token;
-        setText(elements.loginChallengeNote, "Complete the security check to continue signing in.");
+        portalView.loginChallengeNote = "Complete the security check to continue signing in.";
       },
       "expired-callback": () => {
         state.turnstileToken = "";
       },
       "error-callback": () => {
         state.turnstileToken = "";
-        setText(elements.loginChallengeNote, "The security check failed to load. Reload the page and try again.");
+        portalView.loginChallengeNote = "The security check failed to load. Reload the page and try again.";
       },
     });
     clearTurnstileRenderRetry();
     state.turnstileRenderRetryCount = 0;
-    setText(elements.loginChallengeNote, "Complete the security check to continue signing in.");
+    portalView.loginChallengeNote = "Complete the security check to continue signing in.";
   } catch (error) {
-    setText(elements.loginChallengeNote, "Loading the security check...");
+    portalView.loginChallengeNote = "Loading the security check...";
     scheduleTurnstileRenderRetry();
   }
 }
@@ -275,7 +258,7 @@ function resetTurnstile() {
 function log(message, level = "info") {
   const stamp = new Date().toLocaleTimeString();
   const prefix = level === "error" ? "ERR" : level === "warn" ? "WRN" : "INF";
-  elements.eventLog.textContent = `[${stamp}] ${prefix} ${message}\n${elements.eventLog.textContent}`.trim();
+  portalView.eventLogText = `[${stamp}] ${prefix} ${message}\n${portalView.eventLogText}`.trim();
 }
 
 function customerActionInProgress() {
@@ -299,122 +282,12 @@ function accessGroupsSummary(groups, emptyLabel) {
   return Array.isArray(groups) && groups.length > 0 ? groups.join(", ") : emptyLabel;
 }
 
-function createAccessGroupsForm({
-  groups,
-  busy,
-  label,
-  placeholder,
-  saveLabel,
-  onSave,
-}) {
-  const form = document.createElement("form");
-  form.className = "admin-inline-form";
-
-  const field = document.createElement("label");
-  field.className = "admin-inline-field";
-
-  const caption = document.createElement("span");
-  caption.className = "admin-inline-label";
-  caption.textContent = label;
-
-  const input = document.createElement("input");
-  input.type = "text";
-  input.className = "admin-inline-input";
-  input.value = accessGroupsInputValue(groups);
-  input.placeholder = placeholder;
-  input.disabled = busy;
-  input.autocomplete = "off";
-
-  const saveButton = document.createElement("button");
-  saveButton.type = "submit";
-  saveButton.className = "button button-secondary";
-  saveButton.disabled = busy;
-  saveButton.textContent = saveLabel;
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    await onSave(input.value);
-  });
-
-  field.append(caption, input);
-  form.append(field, saveButton);
-  return form;
-}
-
 function passwordGateVisible() {
   return state.authenticated && (state.mustChangePassword || state.passwordDialogOpen);
 }
 
 function passwordGateRequiresCurrentPassword() {
   return passwordGateVisible() && !state.mustChangePassword;
-}
-
-function updateAuthUi() {
-  const authenticated = state.authenticated;
-  setHidden(elements.authShell, authenticated);
-  setHidden(elements.appShell, !authenticated);
-  setHidden(elements.logoutButton, !authenticated);
-  setHidden(elements.changePasswordButton, !authenticated);
-  setHidden(elements.passwordGate, !passwordGateVisible());
-  setHidden(elements.passkeySetupGate, !passkeySetupGateVisible());
-  setHidden(elements.passwordGateCurrentWrap, !passwordGateRequiresCurrentPassword());
-  setHidden(elements.passwordGateCancel, !passwordGateRequiresCurrentPassword());
-  if (elements.passwordGateCurrent) {
-    elements.passwordGateCurrent.required = passwordGateRequiresCurrentPassword();
-  }
-  if (elements.passwordGateNote && passwordGateVisible()) {
-    setText(
-      elements.passwordGateNote,
-      state.mustChangePassword
-        ? `Your temporary password must be replaced before you can use the portal. Use at least ${PASSWORD_MIN_LENGTH} characters.`
-        : "Enter your current password, then choose a new password with at least 15 characters."
-    );
-  }
-  setConnectionState(state.connected);
-
-  const isAdmin = hasAdminPanelAccess() && !state.adminPasskeySetupRequired;
-  setHidden(elements.adminPanel, !authenticated || !isAdmin);
-  if (elements.shopifySyncButton) {
-    elements.shopifySyncButton.disabled = !isAdmin || state.syncingCustomers;
-  }
-  if (elements.reloadCustomersButton) {
-    elements.reloadCustomersButton.disabled = !isAdmin || state.loadingCustomers || customerActionInProgress();
-  }
-  if (elements.adminCreateUserForm) {
-    const disabled = !isAdmin || state.creatingCustomer;
-    for (const field of elements.adminCreateUserForm.querySelectorAll("input, button")) {
-      field.disabled = disabled;
-    }
-  }
-  if (!isAdmin) {
-    state.deletingPackageId = "";
-    state.savingPackageGroupsId = "";
-    state.creatingCustomer = false;
-    state.updatingCustomerId = 0;
-    state.savingCustomerGroupsId = 0;
-    state.deletingCustomerId = 0;
-  }
-
-  if (elements.reloadPasskeysButton) {
-    elements.reloadPasskeysButton.disabled = !authenticated || state.loadingPasskeys || state.deletingPasskeyId !== 0;
-  }
-  if (elements.registerPasskeyButton) {
-    elements.registerPasskeyButton.disabled = !authenticated;
-  }
-  if (elements.adminRegisterPasskeyButton) {
-    elements.adminRegisterPasskeyButton.disabled = !authenticated;
-  }
-
-  renderPasskeys();
-}
-
-function setLoginFeedback(message = "") {
-  if (!elements.loginFeedback) {
-    return;
-  }
-
-  setHidden(elements.loginFeedback, message === "");
-  setText(elements.loginFeedback, message);
 }
 
 function passwordValidationMessage(password, email = "") {
@@ -446,44 +319,38 @@ function passwordValidationMessage(password, email = "") {
 }
 
 function updatePasswordGateValidation() {
-  if (!elements.passwordGateNote) {
-    return false;
-  }
-
-  const currentPassword = elements.passwordGateCurrent?.value ?? "";
-  const password = elements.passwordGateNew?.value ?? "";
-  const confirmPassword = elements.passwordGateConfirm?.value ?? "";
+  const currentPassword = portalView.passwordCurrent;
+  const password = portalView.passwordNew;
+  const confirmPassword = portalView.passwordConfirm;
   const validationMessage = passwordValidationMessage(password, state.user?.email ?? "");
 
   if (passwordGateRequiresCurrentPassword() && currentPassword.length === 0) {
-    setText(elements.passwordGateNote, "Enter your current password, then choose a new password with at least 15 characters.");
+    portalView.passwordGateNote = "Enter your current password, then choose a new password with at least 15 characters.";
     return false;
   }
 
   if (validationMessage !== "") {
-    setText(elements.passwordGateNote, validationMessage);
+    portalView.passwordGateNote = validationMessage;
     return false;
   }
 
   if (confirmPassword !== "" && password !== confirmPassword) {
-    setText(elements.passwordGateNote, "The new password entries do not match yet.");
+    portalView.passwordGateNote = "The new password entries do not match yet.";
     return false;
   }
 
-  setText(
-    elements.passwordGateNote,
-    passwordGateRequiresCurrentPassword()
-      ? "Password looks strong enough. Submit to change it."
-      : "Password looks strong enough. Submit to continue."
-  );
+  portalView.passwordGateNote = passwordGateRequiresCurrentPassword()
+    ? "Password looks strong enough. Submit to change it."
+    : "Password looks strong enough. Submit to continue.";
   return true;
 }
 
 function openPasswordDialog() {
   state.passwordDialogOpen = true;
-  if (elements.passwordGateForm) {
-    elements.passwordGateForm.reset();
-  }
+  portalView.passwordCurrent = "";
+  portalView.passwordNew = "";
+  portalView.passwordConfirm = "";
+  portalView.passwordGateNote = defaultPasswordGateNote();
   updateAuthUi();
 }
 
@@ -493,9 +360,10 @@ function closePasswordDialog() {
   }
 
   state.passwordDialogOpen = false;
-  if (elements.passwordGateForm) {
-    elements.passwordGateForm.reset();
-  }
+  portalView.passwordCurrent = "";
+  portalView.passwordNew = "";
+  portalView.passwordConfirm = "";
+  portalView.passwordGateNote = defaultPasswordGateNote();
   updateAuthUi();
 }
 
@@ -549,105 +417,66 @@ function formatTimestamp(timestamp) {
 }
 
 function renderPackages() {
-  elements.installOptions.textContent = "";
+  updatePortalControls();
+  portalView.installPackages = [];
 
   if (!state.authenticated) {
-    setText(elements.packageNote, "Sign in to view your approved firmware packages.");
+    portalView.packageNote = "Sign in to view your approved firmware packages.";
     return;
   }
 
   if (state.mustChangePassword) {
-    setText(elements.packageNote, "Update your temporary password before using device controls or installing firmware.");
+    portalView.packageNote = "Update your temporary password before using device controls or installing firmware.";
     return;
   }
 
   if (state.adminPasskeySetupRequired) {
-    setText(elements.packageNote, "Register your admin passkey before using device controls or installing firmware.");
+    portalView.packageNote = "Register your admin passkey before using device controls or installing firmware.";
     return;
   }
 
   if (!state.connected) {
-    setText(elements.packageNote, "Connect to your device to load compatible firmware packages.");
+    portalView.packageNote = "Connect to your device to load compatible firmware packages.";
     return;
   }
 
   if (state.packages.length === 0) {
-    setText(elements.packageNote, "No firmware packages are available for this account right now.");
+    portalView.packageNote = "No firmware packages are available for this account right now.";
     return;
   }
 
   const visiblePackages = visiblePackagesForCurrentDevice();
   if (visiblePackages.length === 0) {
     if (state.connected) {
-      const note = state.lastStatus
+      portalView.packageNote = state.lastStatus
         ? deviceRequiresSecureOta()
           ? "No secure firmware packages are available for this device right now."
           : "No bootstrap firmware packages are available for this device right now."
         : "Reading device compatibility before showing available firmware.";
-      setText(elements.packageNote, note);
     }
     return;
   }
 
-  setText(elements.packageNote, "Showing firmware packages compatible with the connected device.");
-
-  for (const pkg of visiblePackages) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "button button-primary install-button";
-    button.disabled = !state.connected || state.updating;
-    button.textContent = pkg.label;
-    button.dataset.packageId = pkg.id;
-    button.addEventListener("click", async () => {
-      let deviceWillRestart = false;
-
-      try {
-        const result = await installFirmware(pkg);
-        deviceWillRestart = Boolean(result?.deviceWillRestart);
-      } catch (error) {
-        log(`OTA failed for ${pkg.label}: ${error.message}`, "error");
-        setProgress(0, 1, `OTA failed: ${error.message}`);
-      } finally {
-        if (!deviceWillRestart) {
-          setUpdatingState(false);
-          try {
-            if (state.connected) {
-              await refreshStatus();
-            }
-          } catch (refreshError) {
-            log(`Post-OTA refresh failed: ${refreshError.message}`, "warn");
-          }
-          renderPackageViews();
-        }
-      }
-    });
-
-    elements.installOptions.append(button);
-  }
+  portalView.packageNote = "Showing firmware packages compatible with the connected device.";
+  portalView.installPackages = visiblePackages.map((pkg) => ({
+    id: pkg.id,
+    label: pkg.label,
+    disabled: !state.connected || state.updating,
+  }));
 }
 
 function renderAdminPackages() {
-  if (!elements.adminPackageList || !elements.adminPackageNote) {
-    return;
-  }
-
-  elements.adminPackageList.textContent = "";
-
+  updatePortalControls();
   const isAdmin = hasAdminPanelAccess();
   if (!isAdmin) {
-    setText(elements.adminPackageNote, "");
-    if (elements.reloadPackagesButton) {
-      elements.reloadPackagesButton.disabled = true;
-    }
+    portalView.adminPackagesNote = "";
+    portalView.adminPackages = [];
     return;
-  }
-
-  if (elements.reloadPackagesButton) {
-    elements.reloadPackagesButton.disabled = packageActionInProgress();
   }
 
   if (state.packages.length === 0) {
-    setText(elements.adminPackageNote, "No firmware packages are currently imported.");
+    portalView.adminPackagesNote = "No firmware packages are currently imported.";
+    portalView.adminPackages = [];
     return;
   }
 
@@ -655,73 +484,26 @@ function renderAdminPackages() {
   const securePackages = state.packages.filter((pkg) => pkg.secureOta).length;
   const bootstrapPackages = totalPackages - securePackages;
   const restrictedPackages = state.packages.filter((pkg) => Array.isArray(pkg.accessGroups) && pkg.accessGroups.length > 0).length;
-  setText(
-    elements.adminPackageNote,
+  portalView.adminPackagesNote =
     `${totalPackages} package${totalPackages === 1 ? "" : "s"} loaded. ` +
-      `${securePackages} secure, ${bootstrapPackages} bootstrap, ${restrictedPackages} restricted by group.`
-  );
+      `${securePackages} secure, ${bootstrapPackages} bootstrap, ${restrictedPackages} restricted by group.`;
 
-  for (const pkg of state.packages) {
-    const item = document.createElement("article");
-    item.className = "package-admin-item";
-
-    const info = document.createElement("div");
-    info.className = "package-admin-copy";
-
-    const title = document.createElement("strong");
-    title.className = "package-admin-title";
-    title.textContent = pkg.label;
-
-    const primaryMeta = document.createElement("p");
-    primaryMeta.className = "package-admin-meta";
-    primaryMeta.textContent = `${pkg.id} • ${pkg.firmwareVersion} • ${pkg.secureOta ? "Secure OTA" : "Bootstrap OTA"}`;
-
-    const secondaryMeta = document.createElement("p");
-    secondaryMeta.className = "package-admin-meta";
-    secondaryMeta.textContent = `${formatBytes(pkg.size)} • Added ${formatTimestamp(pkg.createdAt)}`;
-
-    const audienceMeta = document.createElement("p");
-    audienceMeta.className = "package-admin-meta";
-    audienceMeta.textContent = `Access groups: ${accessGroupsSummary(pkg.accessGroups, "All customers")}`;
-
+  portalView.adminPackages = state.packages.map((pkg) => {
+    const currentView = portalView.adminPackages.find((entry) => entry.id === pkg.id);
     const savingGroups = state.savingPackageGroupsId === pkg.id;
-    const groupForm = createAccessGroupsForm({
-      groups: pkg.accessGroups,
-      busy: packageActionInProgress(),
-      label: "Access groups",
-      placeholder: "Leave blank for all customers",
-      saveLabel: savingGroups ? "Saving..." : "Save Groups",
-      onSave: async (value) => {
-        try {
-          await savePackageGroups(pkg, value);
-        } catch (error) {
-          log(`Package group update failed for ${pkg.label}: ${error.message}`, "error");
-        }
-      },
-    });
-
-    info.append(title, primaryMeta, secondaryMeta, audienceMeta, groupForm);
-
-    const actions = document.createElement("div");
-    actions.className = "package-admin-actions";
-
-    const deleteButton = document.createElement("button");
-    deleteButton.type = "button";
-    deleteButton.className = "button button-danger";
-    deleteButton.disabled = packageActionInProgress();
-    deleteButton.textContent = state.deletingPackageId === pkg.id ? "Deleting..." : "Delete";
-    deleteButton.addEventListener("click", async () => {
-      try {
-        await deletePackage(pkg);
-      } catch (error) {
-        log(`Delete failed for ${pkg.label}: ${error.message}`, "error");
-      }
-    });
-
-    actions.append(deleteButton);
-    item.append(info, actions);
-    elements.adminPackageList.append(item);
-  }
+    return {
+      id: pkg.id,
+      label: pkg.label,
+      primaryMeta: `${pkg.id} • ${pkg.firmwareVersion} • ${pkg.secureOta ? "Secure OTA" : "Bootstrap OTA"}`,
+      secondaryMeta: `${formatBytes(pkg.size)} • Added ${formatTimestamp(pkg.createdAt)}`,
+      audienceMeta: `Access groups: ${accessGroupsSummary(pkg.accessGroups, "All customers")}`,
+      accessGroupsInput: currentView?.accessGroupsInput ?? accessGroupsInputValue(pkg.accessGroups),
+      saveGroupsLabel: savingGroups ? "Saving..." : "Save Groups",
+      saveGroupsDisabled: packageActionInProgress(),
+      deleteLabel: state.deletingPackageId === pkg.id ? "Deleting..." : "Delete",
+      deleteDisabled: packageActionInProgress(),
+    };
+  });
 }
 
 function customerSourceLabel(customer) {
@@ -751,72 +533,37 @@ function customerStatusClass(customer) {
 }
 
 function renderAdminUsers() {
-  if (!elements.adminUserList || !elements.adminUserNote) {
-    return;
-  }
-
-  elements.adminUserList.textContent = "";
-
+  updatePortalControls();
   const isAdmin = hasAdminPanelAccess();
   if (!isAdmin) {
-    setText(elements.adminUserNote, "");
-    if (elements.reloadCustomersButton) {
-      elements.reloadCustomersButton.disabled = true;
-    }
+    portalView.adminCustomersNote = "";
+    portalView.adminCustomers = [];
     return;
-  }
-
-  if (elements.reloadCustomersButton) {
-    elements.reloadCustomersButton.disabled = state.loadingCustomers || customerActionInProgress();
   }
 
   if (state.loadingCustomers && state.customers.length === 0) {
-    setText(elements.adminUserNote, "Loading customer accounts...");
+    portalView.adminCustomersNote = "Loading customer accounts...";
+    portalView.adminCustomers = [];
     return;
   }
 
   if (state.customers.length === 0) {
-    setText(elements.adminUserNote, "No customer accounts are currently provisioned.");
+    portalView.adminCustomersNote = "No customer accounts are currently provisioned.";
+    portalView.adminCustomers = [];
     return;
   }
 
   const activeCount = state.customers.filter((customer) => customer.accessState === "active").length;
   const lockedCount = state.customers.filter((customer) => customer.accessState === "locked").length;
   const disabledCount = state.customers.filter((customer) => customer.accessState === "disabled").length;
-  setText(
-    elements.adminUserNote,
+  portalView.adminCustomersNote =
     `${state.customers.length} customer account${state.customers.length === 1 ? "" : "s"} loaded. ` +
-      `${activeCount} active, ${lockedCount} locked, ${disabledCount} disabled.`
-  );
+      `${activeCount} active, ${lockedCount} locked, ${disabledCount} disabled.`;
 
-  for (const customer of state.customers) {
-    const item = document.createElement("article");
-    item.className = "user-admin-item";
-
-    const info = document.createElement("div");
-    info.className = "user-admin-copy";
-
-    const titleRow = document.createElement("div");
-    titleRow.className = "user-admin-title-row";
-
-    const title = document.createElement("strong");
-    title.className = "user-admin-title";
-    title.textContent = customer.email;
-
-    const status = document.createElement("span");
-    status.className = `status-chip ${customerStatusClass(customer)}`;
-    status.textContent = customerStatusLabel(customer);
-
-    titleRow.append(title, status);
-
-    const primaryMeta = document.createElement("p");
-    primaryMeta.className = "user-admin-meta";
-    const orderLabel = customer.sourceOrderNumber ? ` • Order ${customer.sourceOrderNumber}` : "";
-    primaryMeta.textContent = `${customerSourceLabel(customer)}${orderLabel}`;
-
-    const secondaryMeta = document.createElement("p");
-    secondaryMeta.className = "user-admin-meta";
+  portalView.adminCustomers = state.customers.map((customer) => {
+    const currentView = portalView.adminCustomers.find((entry) => entry.id === customer.id);
     const detailParts = [];
+    const enabling = customer.accessState !== "active";
     detailParts.push(`Access groups: ${accessGroupsSummary(customer.accessGroups, "None")}`);
     if (customer.mustChangePassword) {
       detailParts.push("Password change required");
@@ -829,141 +576,66 @@ function renderAdminUsers() {
     } else if (customer.createdAt) {
       detailParts.push(`Created ${formatTimestamp(customer.createdAt)}`);
     }
-    secondaryMeta.textContent = detailParts.length > 0 ? detailParts.join(" • ") : "No Shopify order metadata";
-
-    const savingGroups = state.savingCustomerGroupsId === customer.id;
-    const groupForm = createAccessGroupsForm({
-      groups: customer.accessGroups,
-      busy: customerActionInProgress(),
-      label: "Access groups",
-      placeholder: "e.g. beta, vip",
-      saveLabel: savingGroups ? "Saving..." : "Save Groups",
-      onSave: async (value) => {
-        try {
-          await saveCustomerGroups(customer, value);
-        } catch (error) {
-          log(`Customer group update failed for ${customer.email}: ${error.message}`, "error");
-        }
-      },
-    });
-
-    info.append(titleRow, primaryMeta, secondaryMeta, groupForm);
-
-    const actions = document.createElement("div");
-    actions.className = "user-admin-actions";
-
-    const toggleButton = document.createElement("button");
-    toggleButton.type = "button";
-    const enabling = customer.accessState !== "active";
-    toggleButton.className = enabling ? "button button-secondary" : "button button-danger";
-    toggleButton.disabled = customerActionInProgress();
-    toggleButton.textContent = state.updatingCustomerId === customer.id
-      ? (enabling ? "Enabling..." : "Disabling...")
-      : (enabling ? "Enable" : "Disable");
-    toggleButton.addEventListener("click", async () => {
-      try {
-        await setCustomerActive(customer, customer.accessState !== "active");
-      } catch (error) {
-        log(`Customer access update failed for ${customer.email}: ${error.message}`, "error");
-      }
-    });
-
-    const deleteButton = document.createElement("button");
-    deleteButton.type = "button";
-    deleteButton.className = "button button-danger";
-    deleteButton.disabled = customerActionInProgress();
-    deleteButton.textContent = state.deletingCustomerId === customer.id ? "Deleting..." : "Delete";
-    deleteButton.addEventListener("click", async () => {
-      try {
-        await deleteCustomer(customer);
-      } catch (error) {
-        log(`Customer delete failed for ${customer.email}: ${error.message}`, "error");
-      }
-    });
-
-    actions.append(toggleButton, deleteButton);
-    item.append(info, actions);
-    elements.adminUserList.append(item);
-  }
+    const orderLabel = customer.sourceOrderNumber ? ` • Order ${customer.sourceOrderNumber}` : "";
+    return {
+      id: customer.id,
+      email: customer.email,
+      statusLabel: customerStatusLabel(customer),
+      statusClass: customerStatusClass(customer),
+      primaryMeta: `${customerSourceLabel(customer)}${orderLabel}`,
+      secondaryMeta: detailParts.length > 0 ? detailParts.join(" • ") : "No Shopify order metadata",
+      accessGroupsInput: currentView?.accessGroupsInput ?? accessGroupsInputValue(customer.accessGroups),
+      saveGroupsLabel: state.savingCustomerGroupsId === customer.id ? "Saving..." : "Save Groups",
+      saveGroupsDisabled: customerActionInProgress(),
+      toggleLabel: state.updatingCustomerId === customer.id
+        ? (enabling ? "Enabling..." : "Disabling...")
+        : (enabling ? "Enable" : "Disable"),
+      toggleClass: enabling ? "button button-secondary" : "button button-danger",
+      toggleDisabled: customerActionInProgress(),
+      deleteLabel: state.deletingCustomerId === customer.id ? "Deleting..." : "Delete",
+      deleteDisabled: customerActionInProgress(),
+    };
+  });
 }
 
 function renderPasskeys() {
-  if (!elements.passkeyList || !elements.passkeyNote) {
-    return;
-  }
-
-  elements.passkeyList.textContent = "";
-
+  updatePortalControls();
   if (!state.authenticated) {
-    setText(elements.passkeyNote, "Sign in to manage passkeys.");
+    portalView.passkeyNote = "Sign in to manage passkeys.";
+    portalView.passkeys = [];
     return;
   }
 
   if (state.loadingPasskeys) {
-    setText(elements.passkeyNote, "Loading passkeys...");
+    portalView.passkeyNote = "Loading passkeys...";
+    portalView.passkeys = [];
     return;
   }
 
   if (state.passkeys.length === 0) {
-    setText(
-      elements.passkeyNote,
+    portalView.passkeyNote =
       state.adminPasskeySetupRequired
         ? "Register your first admin passkey to continue."
-        : "No passkeys are registered on this account yet."
-    );
+        : "No passkeys are registered on this account yet.";
+    portalView.passkeys = [];
     return;
   }
 
-  setText(
-    elements.passkeyNote,
-    `${state.passkeys.length} passkey${state.passkeys.length === 1 ? "" : "s"} registered on this account.`
-  );
+  portalView.passkeyNote =
+    `${state.passkeys.length} passkey${state.passkeys.length === 1 ? "" : "s"} registered on this account.`;
 
-  for (const passkey of state.passkeys) {
-    const item = document.createElement("article");
-    item.className = "user-admin-item";
-
-    const info = document.createElement("div");
-    info.className = "user-admin-copy";
-
-    const title = document.createElement("strong");
-    title.className = "user-admin-title";
-    title.textContent = passkey.label || "Passkey";
-
-    const primaryMeta = document.createElement("p");
-    primaryMeta.className = "user-admin-meta";
-    primaryMeta.textContent = passkey.transports?.length > 0
+  portalView.passkeys = state.passkeys.map((passkey) => ({
+    id: passkey.id,
+    title: passkey.label || "Passkey",
+    primaryMeta: passkey.transports?.length > 0
       ? passkey.transports.join(" • ")
-      : "Platform or roaming authenticator";
-
-    const secondaryMeta = document.createElement("p");
-    secondaryMeta.className = "user-admin-meta";
-    secondaryMeta.textContent = passkey.lastUsedAt
+      : "Platform or roaming authenticator",
+    secondaryMeta: passkey.lastUsedAt
       ? `Last used ${formatTimestamp(passkey.lastUsedAt)}`
-      : `Registered ${formatTimestamp(passkey.createdAt)}`;
-
-    info.append(title, primaryMeta, secondaryMeta);
-
-    const actions = document.createElement("div");
-    actions.className = "user-admin-actions";
-
-    const deleteButton = document.createElement("button");
-    deleteButton.type = "button";
-    deleteButton.className = "button button-danger";
-    deleteButton.disabled = state.deletingPasskeyId !== 0;
-    deleteButton.textContent = state.deletingPasskeyId === passkey.id ? "Removing..." : "Remove";
-    deleteButton.addEventListener("click", async () => {
-      try {
-        await deletePasskey(passkey);
-      } catch (error) {
-        log(`Passkey removal failed: ${error.message}`, "error");
-      }
-    });
-
-    actions.append(deleteButton);
-    item.append(info, actions);
-    elements.passkeyList.append(item);
-  }
+      : `Registered ${formatTimestamp(passkey.createdAt)}`,
+    deleteLabel: state.deletingPasskeyId === passkey.id ? "Removing..." : "Remove",
+    deleteDisabled: state.deletingPasskeyId !== 0,
+  }));
 }
 
 function renderPackageViews() {
@@ -975,22 +647,7 @@ function renderPackageViews() {
 
 function setConnectionState(connected) {
   state.connected = connected;
-  const blockedByPassword = !state.authenticated || interactionGateVisible();
-
-  elements.connectButton.disabled = blockedByPassword || connected;
-  elements.disconnectButton.disabled = !connected || passwordGateVisible();
-  elements.refreshButton.disabled = !connected || passwordGateVisible();
-  elements.rebootButton.disabled = !connected || state.updating || passwordGateVisible();
-  elements.hooksToggle.disabled = !connected || state.updating || passwordGateVisible();
-  elements.otaAbortButton.disabled = !connected || !state.updating || passwordGateVisible();
-
-  elements.connectionPill.textContent = connected ? "Connected" : "Disconnected";
-  elements.connectionPill.classList.toggle("pill-online", connected);
-  elements.connectionPill.classList.toggle("pill-offline", !connected);
-  elements.configNote.textContent = connected
-    ? "Changes are written to preferences immediately."
-    : "Connect to the device before editing persistent settings.";
-
+  updatePortalControls();
   renderPackageViews();
 }
 
@@ -999,9 +656,7 @@ function setUpdatingState(updating) {
   if (!updating) {
     state.pendingFirmware = null;
   }
-  elements.rebootButton.disabled = !state.connected || updating || interactionGateVisible();
-  elements.hooksToggle.disabled = !state.connected || updating || interactionGateVisible();
-  elements.otaAbortButton.disabled = !state.connected || !updating || interactionGateVisible();
+  updatePortalControls();
 
   if (updating) {
     stopStatusPolling();
@@ -1015,23 +670,23 @@ function setUpdatingState(updating) {
 function setProgress(current, total, label) {
   const safeTotal = total > 0 ? total : 1;
   const percent = Math.min(100, Math.max(0, (current / safeTotal) * 100));
-  elements.progressBar.style.width = `${percent.toFixed(1)}%`;
-  elements.progressPercent.textContent = `${percent.toFixed(1)}%`;
-  elements.progressLabel.textContent = label;
+  portalView.progressPercent = Number(percent.toFixed(1));
+  portalView.progressPercentText = `${percent.toFixed(1)}%`;
+  portalView.progressLabel = label;
 }
 
 function resetStatusDisplay() {
   state.lastStatus = null;
   state.lastConfig = null;
-  setText(elements.deviceName, "Not connected");
-  setText(elements.firmwareVersion, "-");
-  setText(elements.canState, "-");
-  setText(elements.hooksState, "-");
-  setText(elements.profileState, "-");
-  setText(elements.speedOffsetState, "-");
-  setText(elements.fsdFlagState, "-");
-  setText(elements.otaState, "Idle");
-  setChecked(elements.hooksToggle, false);
+  portalView.deviceName = "Not connected";
+  portalView.firmwareVersion = "-";
+  portalView.canState = "-";
+  portalView.hooksState = "-";
+  portalView.profileState = "-";
+  portalView.speedOffsetState = "-";
+  portalView.fsdFlagState = "-";
+  portalView.otaState = "Idle";
+  portalView.hooksEnabled = false;
 }
 
 function updateStatusUi(status) {
@@ -1041,16 +696,13 @@ function updateStatusUi(status) {
 
   const previousSecureMode = state.lastStatus === null ? null : deviceRequiresSecureOta();
   state.lastStatus = status;
-  setText(elements.deviceName, status.deviceName ?? "Unknown");
-  setText(elements.firmwareVersion, status.firmwareVersion ?? "-");
-  setText(
-    elements.canState,
-    status.canOnline ? `Online • ${status.canRxAgeMs ?? 0} ms ago` : "No recent frames"
-  );
-  setText(elements.hooksState, status.canHooksEnabled ? "Enabled" : "Disabled");
-  setText(elements.profileState, status.profile ?? "-");
-  setText(elements.speedOffsetState, `${status.speedOffsetPercent ?? 0}%`);
-  setText(elements.fsdFlagState, status.fsdFlag ? "Set" : "Clear");
+  portalView.deviceName = status.deviceName ?? "Unknown";
+  portalView.firmwareVersion = status.firmwareVersion ?? "-";
+  portalView.canState = status.canOnline ? `Online • ${status.canRxAgeMs ?? 0} ms ago` : "No recent frames";
+  portalView.hooksState = status.canHooksEnabled ? "Enabled" : "Disabled";
+  portalView.profileState = status.profile ?? "-";
+  portalView.speedOffsetState = `${status.speedOffsetPercent ?? 0}%`;
+  portalView.fsdFlagState = status.fsdFlag ? "Set" : "Clear";
 
   let otaState = "Idle";
   if (status.otaInProgress) {
@@ -1063,10 +715,10 @@ function updateStatusUi(status) {
     otaState += status.otaMetadataLoaded ? " • secure metadata ready" : " • secure OTA";
   }
 
-  setText(elements.otaState, otaState);
+  portalView.otaState = otaState;
 
   if (!state.updating) {
-    setChecked(elements.hooksToggle, Boolean(status.canHooksEnabled));
+    portalView.hooksEnabled = Boolean(status.canHooksEnabled);
   }
 
   const currentSecureMode = deviceRequiresSecureOta();
@@ -1082,7 +734,7 @@ function updateConfigUi(config) {
 
   state.lastConfig = config;
   if (!state.updating) {
-    setChecked(elements.hooksToggle, Boolean(config.canHooksEnabled));
+    portalView.hooksEnabled = Boolean(config.canHooksEnabled);
   }
 }
 
@@ -1150,15 +802,13 @@ async function loadSession() {
   state.turnstileConfigured = Boolean(session.turnstileConfigured || readTurnstileSiteKey());
   state.loginChallengeRequired = false;
   state.passwordDialogOpen = false;
+  portalView.passkeySetupNote = defaultPasskeySetupNote();
   updateAuthUi();
 
   if (!session.hasUsers) {
-    setText(elements.authNote, "Access is not available at the moment. Please contact support.");
+    portalView.authNote = "Access is not available at the moment. Please contact support.";
   } else {
-    setText(
-      elements.authNote,
-      "If your account was imported from Shopify, your default username is the email address used on your order and your default password is your Shopify order number. If you placed multiple orders, use the first order number. If you already registered a passkey, you can use it instead of your password.",
-    );
+    portalView.authNote = defaultAuthNote();
   }
   setLoginFeedback("");
   updateLoginChallengeUi();
@@ -1185,10 +835,9 @@ async function loadSession() {
 
 function updateLoginChallengeUi() {
   const visible = state.turnstileConfigured && state.loginChallengeRequired;
-  setHidden(elements.loginChallengeShell, !visible);
-  setHidden(elements.loginChallengeNote, !visible);
+  portalView.loginChallengeVisible = visible;
   if (visible) {
-    setText(elements.loginChallengeNote, "Complete the security check to continue signing in.");
+    portalView.loginChallengeNote = "Complete the security check to continue signing in.";
     ensureTurnstileRendered();
     return;
   }
@@ -1228,7 +877,8 @@ async function login(email, password) {
     throw error;
   }
 
-  elements.loginForm.reset();
+  portalView.loginEmail = "";
+  portalView.loginPassword = "";
   setLoginFeedback("");
   resetTurnstile();
   if (payload.passkeyRequired) {
@@ -1453,9 +1103,7 @@ async function signInWithPasskey(email = "", promptedByLogin = false) {
 async function loadAdminUsers() {
   if (!hasAdminPanelAccess()) {
     state.customers = [];
-    if (elements.adminCreateUserResult) {
-      elements.adminCreateUserResult.textContent = "";
-    }
+    portalView.adminCreateUserResult = "";
     renderPackageViews();
     return;
   }
@@ -1479,12 +1127,8 @@ async function syncShopifyCustomers() {
   }
 
   state.syncingCustomers = true;
-  if (elements.shopifySyncResult) {
-    elements.shopifySyncResult.textContent = "Refreshing Shopify customer eligibility...";
-  }
-  if (elements.shopifySyncButton) {
-    elements.shopifySyncButton.disabled = true;
-  }
+  portalView.shopifySyncResult = "Refreshing Shopify customer eligibility...";
+  updatePortalControls();
 
   try {
     const payload = await apiJson("./api/admin-sync-shopify-customers.php", {
@@ -1513,22 +1157,16 @@ async function syncShopifyCustomers() {
         })
       : [];
 
-    if (elements.shopifySyncResult) {
-      elements.shopifySyncResult.textContent = [...summary, ...details].join("\n");
-    }
+    portalView.shopifySyncResult = [...summary, ...details].join("\n");
 
     await loadAdminUsers();
     return payload;
   } catch (error) {
-    if (elements.shopifySyncResult) {
-      elements.shopifySyncResult.textContent = `Refresh failed: ${error.message}`;
-    }
+    portalView.shopifySyncResult = `Refresh failed: ${error.message}`;
     throw error;
   } finally {
     state.syncingCustomers = false;
-    if (elements.shopifySyncButton) {
-      elements.shopifySyncButton.disabled = false;
-    }
+    updatePortalControls();
   }
 }
 
@@ -1606,9 +1244,7 @@ async function createCustomer(email, password, accessGroups) {
 
   state.creatingCustomer = true;
   updateAuthUi();
-  if (elements.adminCreateUserResult) {
-    elements.adminCreateUserResult.textContent = "Creating customer account...";
-  }
+  portalView.adminCreateUserResult = "Creating customer account...";
 
   try {
     const payload = await apiJson("./api/admin-create-user.php", {
@@ -1625,22 +1261,17 @@ async function createCustomer(email, password, accessGroups) {
       );
     }
 
-    if (elements.adminCreateUserForm) {
-      elements.adminCreateUserForm.reset();
-    }
-
-    if (elements.adminCreateUserResult) {
-      elements.adminCreateUserResult.textContent = createdCustomer?.mustChangePassword
-        ? "Customer created with a temporary 4-digit password. They will be forced to change it after login."
-        : "Customer account created.";
-    }
+    portalView.adminCreateUserEmail = "";
+    portalView.adminCreateUserPassword = "";
+    portalView.adminCreateUserGroups = "";
+    portalView.adminCreateUserResult = createdCustomer?.mustChangePassword
+      ? "Customer created with a temporary 4-digit password. They will be forced to change it after login."
+      : "Customer account created.";
 
     renderAdminUsers();
     return payload;
   } catch (error) {
-    if (elements.adminCreateUserResult) {
-      elements.adminCreateUserResult.textContent = `Create failed: ${error.message}`;
-    }
+    portalView.adminCreateUserResult = `Create failed: ${error.message}`;
     throw error;
   } finally {
     state.creatingCustomer = false;
@@ -1709,7 +1340,7 @@ async function savePackageGroups(pkg, accessGroups) {
 }
 
 async function changePassword(newPassword) {
-  const currentPassword = elements.passwordGateCurrent?.value ?? "";
+  const currentPassword = portalView.passwordCurrent;
   const payload = await apiJson("./api/change-password.php", {
     method: "POST",
     body: JSON.stringify({ currentPassword, newPassword }),
@@ -1719,9 +1350,10 @@ async function changePassword(newPassword) {
 
   state.mustChangePassword = Boolean(payload.mustChangePassword);
   state.passwordDialogOpen = false;
-  if (elements.passwordGateForm) {
-    elements.passwordGateForm.reset();
-  }
+  portalView.passwordCurrent = "";
+  portalView.passwordNew = "";
+  portalView.passwordConfirm = "";
+  portalView.passwordGateNote = defaultPasswordGateNote();
   updateAuthUi();
   renderPackageViews();
   return payload;
@@ -2387,226 +2019,295 @@ export function initPortalController() {
   }
 
   initialized = true;
+  dom.loginChallengeWidget = document.querySelector("#login-challenge-widget");
 
-  elements.loginForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    try {
-      await login(elements.loginEmail.value, elements.loginPassword.value);
-      elements.loginPassword.value = "";
-      log("Signed in");
-    } catch (error) {
-      setLoginFeedback(error.message);
-      log(`Login failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.loginPasskeyButton?.addEventListener("click", async () => {
-    try {
-      await signInWithPasskey(elements.loginEmail?.value ?? "");
-    } catch (error) {
-      setLoginFeedback(error.message);
-      log(`Passkey sign-in failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.logoutButton.addEventListener("click", async () => {
-    try {
-      await logout();
-      log("Signed out");
-    } catch (error) {
-      log(`Logout failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.changePasswordButton?.addEventListener("click", () => {
-    openPasswordDialog();
-  });
-
-  elements.shopifySyncButton?.addEventListener("click", async () => {
-    try {
-      await syncShopifyCustomers();
-      log("Shopify customer refresh finished");
-    } catch (error) {
-      log(`Shopify customer refresh failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.adminCreateUserForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    try {
-      await createCustomer(
-        elements.adminCreateUserEmail.value,
-        elements.adminCreateUserPassword.value,
-        elements.adminCreateUserGroups?.value ?? ""
-      );
-      log("Customer account created");
-    } catch (error) {
-      log(`Customer create failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.reloadPackagesButton?.addEventListener("click", async () => {
-    try {
-      await loadPackages();
-      log("Package list refreshed");
-    } catch (error) {
-      log(`Package refresh failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.reloadCustomersButton?.addEventListener("click", async () => {
-    try {
-      await loadAdminUsers();
-      log("Customer list refreshed");
-    } catch (error) {
-      log(`Customer list refresh failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.reloadPasskeysButton?.addEventListener("click", async () => {
-    try {
-      await loadPasskeys();
-      log("Passkey list refreshed");
-    } catch (error) {
-      log(`Passkey refresh failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.registerPasskeyButton?.addEventListener("click", async () => {
-    try {
-      await registerPasskey();
-    } catch (error) {
-      log(`Passkey registration failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.adminRegisterPasskeyButton?.addEventListener("click", async () => {
-    try {
-      await registerPasskey();
-    } catch (error) {
-      setText(elements.passkeySetupNote, error.message);
-      log(`Admin passkey setup failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.adminPasskeyLogoutButton?.addEventListener("click", async () => {
-    try {
-      await logout();
-    } catch (error) {
-      log(`Logout failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.passwordGateForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const currentPassword = elements.passwordGateCurrent?.value ?? "";
-    const newPassword = elements.passwordGateNew.value;
-    const confirmPassword = elements.passwordGateConfirm.value;
-    if (passwordGateRequiresCurrentPassword() && currentPassword === "") {
-      setText(elements.passwordGateNote, "Current password is required.");
-      return;
-    }
-    const validationMessage = passwordValidationMessage(newPassword, state.user?.email ?? "");
-    if (validationMessage !== "") {
-      setText(elements.passwordGateNote, validationMessage);
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setText(elements.passwordGateNote, "The new password entries do not match.");
-      return;
-    }
-
-    try {
-      await changePassword(newPassword);
-      log("Account password updated");
-    } catch (error) {
-      setText(elements.passwordGateNote, error.message);
-      log(`Password update failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.passwordGateCancel?.addEventListener("click", () => {
-    closePasswordDialog();
-  });
-
-  elements.passwordGateCurrent?.addEventListener("input", () => {
-    updatePasswordGateValidation();
-  });
-
-  elements.passwordGateNew?.addEventListener("input", () => {
-    updatePasswordGateValidation();
-  });
-
-  elements.passwordGateConfirm?.addEventListener("input", () => {
-    updatePasswordGateValidation();
-  });
-
-  elements.connectButton.addEventListener("click", async () => {
-    try {
-      await connect();
-    } catch (error) {
-      log(`Connect failed: ${error.message}`, "error");
-      handleDisconnect();
-    }
-  });
-
-  elements.disconnectButton.addEventListener("click", async () => {
-    await disconnect();
-  });
-
-  elements.refreshButton.addEventListener("click", async () => {
-    try {
-      await refreshStatus(true);
-      await loadPackages();
-      log("Status refreshed");
-    } catch (error) {
-      log(`Refresh failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.rebootButton.addEventListener("click", async () => {
-    try {
-      await rebootDevice();
-    } catch (error) {
-      log(`Reboot failed: ${error.message}`, "error");
-    }
-  });
-
-  elements.hooksToggle.addEventListener("change", async (event) => {
-    try {
-      const enabled = event.currentTarget.checked;
-      await setHooksEnabled(enabled);
-    } catch (error) {
-      log(`Config update failed: ${error.message}`, "error");
-      if (state.lastConfig) {
-        setChecked(elements.hooksToggle, Boolean(state.lastConfig.canHooksEnabled));
-      }
-    }
-  });
-
-  elements.otaAbortButton.addEventListener("click", async () => {
-    try {
-      await abortOta();
-    } catch (error) {
-      log(`Abort failed: ${error.message}`, "error");
-    } finally {
-      setUpdatingState(false);
+  assignPortalActions({
+    login: async () => {
       try {
-        if (state.connected) {
-          await refreshStatus();
-        }
-      } catch (refreshError) {
-        log(`Refresh after abort failed: ${refreshError.message}`, "warn");
+        await login(portalView.loginEmail, portalView.loginPassword);
+        portalView.loginPassword = "";
+        log("Signed in");
+      } catch (error) {
+        setLoginFeedback(error.message);
+        log(`Login failed: ${error.message}`, "error");
       }
-    }
+    },
+    signInWithPasskey: async () => {
+      try {
+        await signInWithPasskey(portalView.loginEmail);
+      } catch (error) {
+        setLoginFeedback(error.message);
+        log(`Passkey sign-in failed: ${error.message}`, "error");
+      }
+    },
+    logout: async () => {
+      try {
+        await logout();
+        log("Signed out");
+      } catch (error) {
+        log(`Logout failed: ${error.message}`, "error");
+      }
+    },
+    openPasswordDialog: () => {
+      openPasswordDialog();
+    },
+    closePasswordDialog: () => {
+      closePasswordDialog();
+    },
+    changePassword: async () => {
+      const currentPassword = portalView.passwordCurrent;
+      const newPassword = portalView.passwordNew;
+      const confirmPassword = portalView.passwordConfirm;
+      if (passwordGateRequiresCurrentPassword() && currentPassword === "") {
+        portalView.passwordGateNote = "Current password is required.";
+        return;
+      }
+      const validationMessage = passwordValidationMessage(newPassword, state.user?.email ?? "");
+      if (validationMessage !== "") {
+        portalView.passwordGateNote = validationMessage;
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        portalView.passwordGateNote = "The new password entries do not match.";
+        return;
+      }
+
+      try {
+        await changePassword(newPassword);
+        log("Account password updated");
+      } catch (error) {
+        portalView.passwordGateNote = error.message;
+        log(`Password update failed: ${error.message}`, "error");
+      }
+    },
+    connect: async () => {
+      try {
+        await connect();
+      } catch (error) {
+        log(`Connect failed: ${error.message}`, "error");
+        handleDisconnect();
+      }
+    },
+    disconnect: async () => {
+      await disconnect();
+    },
+    refreshStatus: async () => {
+      try {
+        await refreshStatus(true);
+        await loadPackages();
+        log("Status refreshed");
+      } catch (error) {
+        log(`Refresh failed: ${error.message}`, "error");
+      }
+    },
+    rebootDevice: async () => {
+      try {
+        await rebootDevice();
+      } catch (error) {
+        log(`Reboot failed: ${error.message}`, "error");
+      }
+    },
+    toggleHooks: async (enabled) => {
+      try {
+        await setHooksEnabled(enabled);
+      } catch (error) {
+        log(`Config update failed: ${error.message}`, "error");
+        if (state.lastConfig) {
+          portalView.hooksEnabled = Boolean(state.lastConfig.canHooksEnabled);
+        }
+      }
+    },
+    abortOta: async () => {
+      try {
+        await abortOta();
+      } catch (error) {
+        log(`Abort failed: ${error.message}`, "error");
+      } finally {
+        setUpdatingState(false);
+        try {
+          if (state.connected) {
+            await refreshStatus();
+          }
+        } catch (refreshError) {
+          log(`Refresh after abort failed: ${refreshError.message}`, "warn");
+        }
+      }
+    },
+    installPackage: async (packageId) => {
+      const pkg = state.packages.find((entry) => entry.id === packageId);
+      if (!pkg) {
+        log(`Install failed: package ${packageId} is unavailable`, "error");
+        return;
+      }
+
+      let deviceWillRestart = false;
+
+      try {
+        const result = await installFirmware(pkg);
+        deviceWillRestart = Boolean(result?.deviceWillRestart);
+      } catch (error) {
+        log(`OTA failed for ${pkg.label}: ${error.message}`, "error");
+        setProgress(0, 1, `OTA failed: ${error.message}`);
+      } finally {
+        if (!deviceWillRestart) {
+          setUpdatingState(false);
+          try {
+            if (state.connected) {
+              await refreshStatus();
+            }
+          } catch (refreshError) {
+            log(`Post-OTA refresh failed: ${refreshError.message}`, "warn");
+          }
+          renderPackageViews();
+        }
+      }
+    },
+    syncShopifyCustomers: async () => {
+      try {
+        await syncShopifyCustomers();
+        log("Shopify customer refresh finished");
+      } catch (error) {
+        log(`Shopify customer refresh failed: ${error.message}`, "error");
+      }
+    },
+    reloadPackages: async () => {
+      try {
+        await loadPackages();
+        log("Package list refreshed");
+      } catch (error) {
+        log(`Package refresh failed: ${error.message}`, "error");
+      }
+    },
+    reloadCustomers: async () => {
+      try {
+        await loadAdminUsers();
+        log("Customer list refreshed");
+      } catch (error) {
+        log(`Customer list refresh failed: ${error.message}`, "error");
+      }
+    },
+    createCustomer: async () => {
+      try {
+        await createCustomer(
+          portalView.adminCreateUserEmail,
+          portalView.adminCreateUserPassword,
+          portalView.adminCreateUserGroups
+        );
+        log("Customer account created");
+      } catch (error) {
+        log(`Customer create failed: ${error.message}`, "error");
+      }
+    },
+    saveCustomerGroups: async (customerId) => {
+      const customer = state.customers.find((entry) => entry.id === customerId);
+      const customerView = portalView.adminCustomers.find((entry) => entry.id === customerId);
+      if (!customer || !customerView) {
+        return;
+      }
+
+      try {
+        await saveCustomerGroups(customer, customerView.accessGroupsInput);
+      } catch (error) {
+        log(`Customer group update failed for ${customer.email}: ${error.message}`, "error");
+      }
+    },
+    toggleCustomerAccess: async (customerId) => {
+      const customer = state.customers.find((entry) => entry.id === customerId);
+      if (!customer) {
+        return;
+      }
+
+      try {
+        await setCustomerActive(customer, customer.accessState !== "active");
+      } catch (error) {
+        log(`Customer access update failed for ${customer.email}: ${error.message}`, "error");
+      }
+    },
+    deleteCustomer: async (customerId) => {
+      const customer = state.customers.find((entry) => entry.id === customerId);
+      if (!customer) {
+        return;
+      }
+
+      try {
+        await deleteCustomer(customer);
+      } catch (error) {
+        log(`Customer delete failed for ${customer.email}: ${error.message}`, "error");
+      }
+    },
+    reloadPasskeys: async () => {
+      try {
+        await loadPasskeys();
+        log("Passkey list refreshed");
+      } catch (error) {
+        log(`Passkey refresh failed: ${error.message}`, "error");
+      }
+    },
+    registerPasskey: async () => {
+      try {
+        await registerPasskey();
+      } catch (error) {
+        log(`Passkey registration failed: ${error.message}`, "error");
+      }
+    },
+    registerAdminPasskey: async () => {
+      try {
+        await registerPasskey();
+      } catch (error) {
+        portalView.passkeySetupNote = error.message;
+        log(`Admin passkey setup failed: ${error.message}`, "error");
+      }
+    },
+    savePackageGroups: async (packageId) => {
+      const pkg = state.packages.find((entry) => entry.id === packageId);
+      const packageView = portalView.adminPackages.find((entry) => entry.id === packageId);
+      if (!pkg || !packageView) {
+        return;
+      }
+
+      try {
+        await savePackageGroups(pkg, packageView.accessGroupsInput);
+      } catch (error) {
+        log(`Package group update failed for ${pkg.label}: ${error.message}`, "error");
+      }
+    },
+    deletePackage: async (packageId) => {
+      const pkg = state.packages.find((entry) => entry.id === packageId);
+      if (!pkg) {
+        return;
+      }
+
+      try {
+        await deletePackage(pkg);
+      } catch (error) {
+        log(`Delete failed for ${pkg.label}: ${error.message}`, "error");
+      }
+    },
+    removePasskey: async (passkeyId) => {
+      const passkey = state.passkeys.find((entry) => entry.id === passkeyId);
+      if (!passkey) {
+        return;
+      }
+
+      try {
+        await deletePasskey(passkey);
+      } catch (error) {
+        log(`Passkey removal failed: ${error.message}`, "error");
+      }
+    },
+    clearLog: () => {
+      portalView.eventLogText = "";
+    },
   });
 
-  elements.clearLogButton.addEventListener("click", () => {
-    elements.eventLog.textContent = "";
-  });
+  watch(
+    () => [portalView.passwordCurrent, portalView.passwordNew, portalView.passwordConfirm, state.mustChangePassword, state.passwordDialogOpen],
+    () => {
+      if (portalView.passwordGateVisible) {
+        updatePasswordGateValidation();
+      }
+    }
+  );
 
   setConnectionState(false);
   setUpdatingState(false);
