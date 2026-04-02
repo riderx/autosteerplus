@@ -1,4 +1,7 @@
+import { createApp } from 'vue';
 import { Capacitor } from '@capacitor/core';
+import App from './App.vue';
+import './portal/styles.css';
 import { bootstrapPortalSession, installPortalFetchBridge } from './runtime/portal-session';
 import { installWebBluetoothShim } from './runtime/web-bluetooth-shim';
 
@@ -9,7 +12,7 @@ function renderFatalError(error: unknown): void {
     'style',
     [
       'position:sticky',
-      'top:0',
+      'top:calc(env(safe-area-inset-top, 0px) + 0.5rem)',
       'z-index:9999',
       'margin:1rem auto 0',
       'width:min(1180px,calc(100% - 2rem))',
@@ -26,16 +29,21 @@ function renderFatalError(error: unknown): void {
   document.body.prepend(banner);
 }
 
-async function main(): Promise<void> {
+async function bootstrapNativeEnvironment(): Promise<void> {
   document.documentElement.dataset.platform = Capacitor.getPlatform();
 
-  if (Capacitor.isNativePlatform()) {
-    installPortalFetchBridge();
-    await bootstrapPortalSession();
-    installWebBluetoothShim();
+  if (!Capacitor.isNativePlatform()) {
+    return;
   }
 
-  await import('./portal/app.js');
+  installPortalFetchBridge();
+  await bootstrapPortalSession();
+  installWebBluetoothShim();
+}
+
+async function main(): Promise<void> {
+  await bootstrapNativeEnvironment();
+  createApp(App).mount('#app');
 }
 
 void main().catch((error) => {
