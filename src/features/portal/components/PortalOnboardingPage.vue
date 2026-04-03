@@ -816,7 +816,7 @@ const selectedInstallEmbedUrl = computed(() => {
     return selectedInstallGuide.value.embedUrl;
   }
 
-  return `https://asp.tslap.store/yt/player/${selectedInstallGuide.value.videoId}`;
+  return `https://yt.tslap.store/player/${selectedInstallGuide.value.videoId}`;
 });
 const canProceedToInstall = computed(() => hasDevice.value === true && (hasFsd.value === true || reviewedFsdOptions.value));
 const normalizedSoftwareVersion = computed(() => softwareVersion.value.trim().toLowerCase());
@@ -1110,6 +1110,7 @@ function acknowledgeFsdOptions() {
 function selectModel(modelId: ModelId) {
   selectedModel.value = modelId;
   selectedYearBand.value = null;
+  void scrollToSection('onboarding-step-3');
 }
 
 function selectYearBand(yearBandId: YearBandId) {

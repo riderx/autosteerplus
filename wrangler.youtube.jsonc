@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "autosteerplus-youtube",
+  "main": "./worker-youtube/index.ts",
+  "account_id": "9ee3d7479a3c359681e3fab2c8cb22c0",
+  "compatibility_date": "2026-04-03",
+  "routes": [
+    {
+      "pattern": "yt.tslap.store",
+      "zone_name": "tslap.store",
+      "custom_domain": true
+    }
+  ],
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}
