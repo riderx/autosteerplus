@@ -1082,10 +1082,8 @@ function selectHasDevice(value: boolean) {
   if (!value) {
     hasFsd.value = null;
     reviewedFsdOptions.value = false;
-    return;
   }
-
-  void scrollToSection('onboarding-step-2');
+  void revealAfterChoice();
 }
 
 function selectHasFsd(value: boolean) {
@@ -1096,52 +1094,51 @@ function selectHasFsd(value: boolean) {
     selectedYearBand.value = null;
     softwareVersion.value = '';
     showVerification.value = false;
-    return;
   }
-
-  void scrollToSection('onboarding-step-3');
+  void revealAfterChoice();
 }
 
 function acknowledgeFsdOptions() {
   reviewedFsdOptions.value = true;
-  void scrollToSection('onboarding-step-3');
+  void revealAfterChoice();
 }
 
 function selectModel(modelId: ModelId) {
   selectedModel.value = modelId;
   selectedYearBand.value = null;
-  void scrollToSection('onboarding-step-3');
+  void revealAfterChoice();
 }
 
 function selectYearBand(yearBandId: YearBandId) {
   selectedYearBand.value = yearBandId;
-  if (yearBandId === 'unsure') {
-    return;
-  }
-
-  void scrollToSection('onboarding-step-4');
+  void revealAfterChoice();
 }
 
 function selectSoftwareVersion(version: string) {
   softwareVersion.value = version;
-  if (!selectedInstallGuide.value) {
-    return;
-  }
-
-  void scrollToSection('onboarding-step-5');
+  void revealAfterChoice();
 }
 
 function openVerificationStep() {
   showVerification.value = true;
-  void scrollToSection('onboarding-step-6');
+  void revealAfterChoice();
 }
 
-async function scrollToSection(id: string) {
+async function revealAfterChoice() {
   await nextTick();
   window.requestAnimationFrame(() => {
-    document.getElementById(id)?.scrollIntoView({
+    const activeChoice = document.querySelector<HTMLElement>('.onboarding-choice.is-active');
+    if (!activeChoice) {
+      return;
+    }
+
+    const topInset = 24;
+    const rect = activeChoice.getBoundingClientRect();
+    const targetTop = window.scrollY + rect.top - topInset;
+
+    window.scrollTo({
+      top: Math.max(0, targetTop),
       behavior: 'smooth',
-      block: 'start',
     });
   });
 }

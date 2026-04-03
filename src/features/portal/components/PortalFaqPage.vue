@@ -17,17 +17,18 @@
           This page consolidates the repeated questions from the `#fsd` discussions so people can check versions,
           delivery, compatibility, and safety notes quickly.
         </p>
-        <div class="docs-badge-row">
-          <k-chip class="docs-badge">Generated from `#fsd` channel discussions</k-chip>
-          <k-chip
-            component="a"
+        <div class="mt-5 flex flex-wrap items-start gap-3">
+          <span class="inline-flex rounded-full border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.92)] px-4 py-2 text-[0.88rem] leading-[1.35] text-[#1f2937]">
+            Generated from `#fsd` channel discussions
+          </span>
+          <a
             href="https://teslaandroid.com/blogs/news/the-diagnostic-tool-facts-over-drama"
             target="_blank"
             rel="noreferrer"
-            class="docs-badge"
+            class="inline-flex rounded-full border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.92)] px-4 py-2 text-[0.88rem] leading-[1.35] text-[#1f2937]"
           >
             Facts over drama article
-          </k-chip>
+          </a>
         </div>
         <div class="hero-actions docs-top-actions">
           <PortalActionButton @click="portalActions.openOnboarding()">
@@ -145,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { kChip, kPage } from 'konsta/vue';
+import { kPage } from 'konsta/vue';
 
 import PortalActionButton from './PortalActionButton.vue';
 import { portalActions, portalView } from '../view-model';

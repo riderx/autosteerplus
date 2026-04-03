@@ -17,9 +17,13 @@
           Use this page for the two non-obvious parts of the process: getting FSD set on a car that does not already
           have it, and verifying the install without guessing.
         </p>
-        <div class="docs-badge-row">
-          <k-chip class="docs-badge">Skip the subscription route if the car already owns FSD outright</k-chip>
-          <k-chip class="docs-badge docs-badge-warning">Avoid 2026.8.6 on AMD. Intel results are mixed too.</k-chip>
+        <div class="mt-5 flex flex-wrap items-start gap-3">
+          <span class="inline-flex rounded-full border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.92)] px-4 py-2 text-[0.88rem] leading-[1.35] text-[#1f2937]">
+            Skip the subscription route if the car already owns FSD outright
+          </span>
+          <span class="inline-flex rounded-full border border-[rgba(255,149,0,0.18)] bg-[rgba(255,149,0,0.12)] px-4 py-2 text-[0.88rem] leading-[1.35] text-[#9a3412]">
+            Avoid 2026.8.6 on AMD. Intel results are mixed too.
+          </span>
         </div>
         <div class="hero-actions docs-top-actions">
           <PortalActionButton @click="portalActions.openOnboarding()">
@@ -290,7 +294,7 @@
 
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core';
-import { kChip, kPage } from 'konsta/vue';
+import { kPage } from 'konsta/vue';
 
 import fsdVisualisationImage from '../../../../fsd_visualisation.png';
 import PortalActionButton from './PortalActionButton.vue';
