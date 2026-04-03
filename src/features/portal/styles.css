@@ -1160,8 +1160,23 @@ body::before {
 .faq-item summary {
   list-style: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 1rem 1.1rem;
   font-weight: 700;
+}
+
+.faq-item summary::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-right: 2px solid rgba(255, 255, 255, 0.72);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.72);
+  transform: rotate(-45deg);
+  transition: transform 160ms ease, border-color 160ms ease;
 }
 
 .faq-item summary::-webkit-details-marker {
@@ -1171,6 +1186,11 @@ body::before {
 .faq-item[open] summary {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.faq-item[open] summary::after {
+  transform: rotate(45deg);
+  border-color: rgba(141, 183, 255, 0.92);
 }
 
 .faq-item-body {

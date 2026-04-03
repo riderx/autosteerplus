@@ -2,7 +2,7 @@
   <div class="faq-page" :hidden="portalView.currentPage !== 'faq'">
     <header class="hero hero-auth faq-hero">
       <p class="eyebrow">FAQ</p>
-      <h1 class="hero-title">Tesla Android FSD Diagnostic Tool</h1>
+      <h1 class="hero-title">autosteerplus</h1>
       <p class="hero-copy">
         Community-sourced answers collected from the `#fsd` channel discussions, organized into one place for fast
         reference.
@@ -210,7 +210,7 @@ const faqSections: FaqSection[] = [
     title: 'General questions',
     entries: [
       {
-        question: 'What does the diagnostic tool do?',
+        question: 'What does autosteerplus do?',
         paragraphs: [
           'It removes the geofencing restriction on FSD so Full Self-Driving (Supervised) can work in regions where Tesla has not officially launched it yet.',
           'It also enables unrestricted Actually Smart Summon with a much larger range, and improves lane change plus Autosteer turn radius.',

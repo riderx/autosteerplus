@@ -8,7 +8,7 @@
         video for your car, and the final radius check that proves the install worked.
       </p>
       <div class="docs-badge-row">
-        <span class="docs-badge">You need the diagnostic tool physically with you</span>
+        <span class="docs-badge">You need the autosteerplus device physically with you</span>
         <span class="docs-badge">You also need FSD purchased outright or an active subscription</span>
         <span class="docs-badge docs-badge-warning">Do not update AMD cars to 2026.8.6 yet</span>
       </div>
@@ -75,7 +75,7 @@
         </div>
         <div v-if="hasDevice === false" class="onboarding-support-card">
           <p class="panel-label">Buy the tool</p>
-          <h3>Order the Tesla Android FSD Diagnostic Tool first</h3>
+          <h3>Order the autosteerplus device first</h3>
           <p class="muted-copy">
             The onboarding flow only makes sense once the hardware is in your hands. Use the official product page
             below, then come back here for the install guide and verification steps.
@@ -186,9 +186,13 @@
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 3</p>
-            <h2>What car do you have?</h2>
+            <h2>What car profile matches your vehicle?</h2>
           </div>
         </div>
+        <p class="muted-copy">
+          Pick the closest match first. That lets the app tell you which FSD stack you should expect and which
+          install path makes sense.
+        </p>
         <div class="onboarding-choice-grid">
           <button
             v-for="car in carOptions"
@@ -204,13 +208,79 @@
             <p class="muted-copy">{{ car.body }}</p>
           </button>
         </div>
+        <article v-if="selectedCar" class="onboarding-support-card onboarding-support-card-accent">
+          <p class="panel-label">Car profile result</p>
+          <h3>{{ selectedCar.title }}</h3>
+          <p class="muted-copy">{{ selectedCar.profileNote }}</p>
+          <ul class="docs-inline-list">
+            <li>{{ selectedCar.expectedFsd }}</li>
+            <li>{{ selectedCar.installNote }}</li>
+          </ul>
+        </article>
       </section>
 
       <section v-if="selectedCar" class="panel">
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 4</p>
-            <h2>{{ selectedCar.title }} install guide</h2>
+            <h2>What Tesla software version is on the car?</h2>
+          </div>
+        </div>
+        <p class="muted-copy">
+          Enter the car software version before installing. This tells you whether the current release is confirmed,
+          mixed, blocked, or still unknown for this setup.
+        </p>
+        <label class="field onboarding-version-field">
+          <span>Car software version</span>
+          <input
+            v-model="softwareVersion"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="e.g. 2026.8.3"
+          >
+        </label>
+        <div class="onboarding-fsd-grid">
+          <article class="onboarding-support-card onboarding-support-card-accent">
+            <p class="panel-label">Expected FSD stack</p>
+            <h3>{{ selectedCar.expectedFsdTitle }}</h3>
+            <p class="muted-copy">
+              {{ selectedCar.expectedFsdBody }}
+            </p>
+            <ul class="docs-inline-list">
+              <li>{{ selectedCar.installNote }}</li>
+              <li>If the car behavior does not match this profile, stop and ask in Slack before proceeding</li>
+            </ul>
+          </article>
+          <article :class="['onboarding-support-card', compatibilityCardClass]">
+            <p class="panel-label">Compatibility result</p>
+            <h3>{{ compatibilityState.title }}</h3>
+            <p class="muted-copy">{{ compatibilityState.body }}</p>
+            <ul class="docs-inline-list">
+              <li v-for="item in compatibilityState.items" :key="item">{{ item }}</li>
+            </ul>
+          </article>
+        </div>
+        <div class="hero-actions">
+          <a
+            class="button button-ghost"
+            href="https://teslaandroid.slack.com"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Ask in Slack
+          </a>
+          <button class="button button-ghost" type="button" @click="portalActions.openFaq()">
+            FAQ
+          </button>
+        </div>
+      </section>
+
+      <section v-if="selectedInstallGuide && compatibilityState.canInstall" class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-label">Step 5</p>
+            <h2>{{ selectedInstallGuide.title }} install guide</h2>
           </div>
         </div>
         <p class="muted-copy">
@@ -220,14 +290,14 @@
         <div class="onboarding-video-shell">
           <iframe
             class="onboarding-video-frame"
-            :src="selectedCar.embedUrl"
-            :title="selectedCar.videoTitle"
+            :src="selectedInstallGuide.embedUrl"
+            :title="selectedInstallGuide.videoTitle"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowfullscreen
           ></iframe>
         </div>
         <div class="docs-step-grid">
-          <article v-for="step in selectedCar.steps" :key="step.title" class="docs-step-card">
+          <article v-for="step in selectedInstallGuide.steps" :key="step.title" class="docs-step-card">
             <span class="metric-label">{{ step.step }}</span>
             <strong>{{ step.title }}</strong>
             <p class="muted-copy">{{ step.body }}</p>
@@ -254,7 +324,7 @@
       <section v-if="showVerification" id="onboarding-verification" class="panel">
         <div class="panel-heading">
           <div>
-            <p class="panel-label">Step 5</p>
+            <p class="panel-label">Step 6</p>
             <h2>Check if it worked</h2>
           </div>
         </div>
@@ -317,7 +387,7 @@ const summaryCards = [
   {
     kicker: 'Hardware',
     title: 'Tool in hand first',
-    body: 'If you do not physically have the diagnostic tool yet, buy it before worrying about install steps.',
+    body: 'If you do not physically have the autosteerplus device yet, buy it before worrying about install steps.',
   },
   {
     kicker: 'Access',
@@ -360,7 +430,7 @@ const carOptions = [
     kicker: 'Video A',
     title: 'Model 3 Highland',
     body: 'Use the dedicated Highland install video and trim path.',
-    videoTitle: 'Model 3 Highland diagnostic tool install',
+    videoTitle: 'Model 3 Highland autosteerplus install',
     embedUrl: 'https://www.youtube.com/embed/AFFVvfFIPFY?rel=0',
     steps: [
       {
@@ -390,7 +460,7 @@ const carOptions = [
     kicker: 'Video B',
     title: 'Old Model 3 / Juniper',
     body: 'Use the shared video for older Model 3 and Juniper cars.',
-    videoTitle: 'Old Model 3 and Juniper diagnostic tool install',
+    videoTitle: 'Old Model 3 and Juniper autosteerplus install',
     embedUrl: 'https://www.youtube.com/embed/ifwJNZgykVI?rel=0',
     steps: [
       {

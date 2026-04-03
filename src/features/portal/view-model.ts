@@ -52,6 +52,7 @@ export interface PortalActions {
   signInWithPasskey: () => Promise<void>;
   openDocs: () => void;
   openOnboarding: () => void;
+  openIdentifyCar: () => void;
   openFaq: () => void;
   openDashboard: () => void;
   toggleAdvancedMode: () => void;
@@ -90,6 +91,7 @@ export const portalActions: PortalActions = {
   signInWithPasskey: noopAsync,
   openDocs: noopVoid,
   openOnboarding: noopVoid,
+  openIdentifyCar: noopVoid,
   openFaq: noopVoid,
   openDashboard: noopVoid,
   toggleAdvancedMode: noopVoid,
@@ -137,7 +139,7 @@ export function defaultPasswordGateNote() {
 }
 
 export const portalView = reactive({
-  currentPage: 'dashboard' as 'dashboard' | 'docs' | 'onboarding' | 'faq',
+  currentPage: 'dashboard' as 'dashboard' | 'docs' | 'onboarding' | 'faq' | 'identify',
   advancedMode: false,
   authenticated: false,
   authNote: defaultAuthNote(),
