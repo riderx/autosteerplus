@@ -6,7 +6,7 @@
       </header>
 
       <main class="onboarding-layout">
-      <section class="panel">
+      <section id="onboarding-step-1" class="panel">
         <div class="panel-heading">
           <div>
             <p class="panel-label">Overview</p>
@@ -90,7 +90,7 @@
         </div>
       </section>
 
-      <section v-if="hasDevice === true" class="panel">
+      <section v-if="hasDevice === true" id="onboarding-step-2" class="panel">
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 2</p>
@@ -176,7 +176,7 @@
         </div>
       </section>
 
-      <section v-if="canProceedToInstall" class="panel">
+      <section v-if="canProceedToInstall" id="onboarding-step-3" class="panel">
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 3</p>
@@ -244,7 +244,7 @@
         </article>
       </section>
 
-      <section v-if="selectedCar && vehicleSelectionState.canInstall" class="panel">
+      <section v-if="selectedCar && vehicleSelectionState.canInstall" id="onboarding-step-4" class="panel">
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 4</p>
@@ -273,7 +273,7 @@
             type="button"
             class="docs-badge onboarding-version-chip"
             :class="{ 'is-active': softwareVersion === version }"
-            @click="softwareVersion = version"
+            @click="selectSoftwareVersion(version)"
           >
             {{ version }}
           </button>
@@ -317,7 +317,7 @@
         </div>
       </section>
 
-      <section v-if="selectedInstallGuide && compatibilityState.canInstall" class="panel">
+      <section v-if="selectedInstallGuide && compatibilityState.canInstall" id="onboarding-step-5" class="panel">
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 5</p>
@@ -346,7 +346,7 @@
           </article>
         </div>
         <div class="hero-actions">
-          <PortalActionButton @click="showVerification = true">
+          <PortalActionButton @click="openVerificationStep()">
             I did the install, check if it worked
           </PortalActionButton>
           <PortalActionButton
@@ -444,7 +444,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { kPage } from 'konsta/vue';
 
 import fsdVisualisationImage from '../../../../fsd_visualisation.png';
@@ -1066,7 +1066,10 @@ function selectHasDevice(value: boolean) {
   if (!value) {
     hasFsd.value = null;
     reviewedFsdOptions.value = false;
+    return;
   }
+
+  void scrollToSection('onboarding-step-2');
 }
 
 function selectHasFsd(value: boolean) {
@@ -1077,11 +1080,15 @@ function selectHasFsd(value: boolean) {
     selectedYearBand.value = null;
     softwareVersion.value = '';
     showVerification.value = false;
+    return;
   }
+
+  void scrollToSection('onboarding-step-3');
 }
 
 function acknowledgeFsdOptions() {
   reviewedFsdOptions.value = true;
+  void scrollToSection('onboarding-step-3');
 }
 
 function selectModel(modelId: ModelId) {
@@ -1091,5 +1098,34 @@ function selectModel(modelId: ModelId) {
 
 function selectYearBand(yearBandId: YearBandId) {
   selectedYearBand.value = yearBandId;
+  if (yearBandId === 'unsure') {
+    return;
+  }
+
+  void scrollToSection('onboarding-step-4');
+}
+
+function selectSoftwareVersion(version: string) {
+  softwareVersion.value = version;
+  if (!selectedInstallGuide.value) {
+    return;
+  }
+
+  void scrollToSection('onboarding-step-5');
+}
+
+function openVerificationStep() {
+  showVerification.value = true;
+  void scrollToSection('onboarding-step-6');
+}
+
+async function scrollToSection(id: string) {
+  await nextTick();
+  window.requestAnimationFrame(() => {
+    document.getElementById(id)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  });
 }
 </script>
