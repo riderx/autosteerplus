@@ -124,6 +124,14 @@
                 do not have to install it and the prompt should disappear after
                 some time.
               </p>
+              <div :class="actionRowClass">
+                <PortalActionButton
+                  variant="ghost"
+                  @click="portalActions.openDocsSection('service-mode-reset')"
+                >
+                  See the service mode Software reinstall guide
+                </PortalActionButton>
+              </div>
             </article>
           </div>
         </section>

@@ -195,24 +195,25 @@ function resolveCurrentPageFromLocation() {
   const hash = String(window.location.hash ?? "")
     .trim()
     .toLowerCase();
+  const hashPath = hash.split("?")[0] ?? "";
   if (
-    hash === "" ||
-    hash === "#/" ||
-    hash === DASHBOARD_HASH ||
-    hash === "#home"
+    hashPath === "" ||
+    hashPath === "#/" ||
+    hashPath === DASHBOARD_HASH ||
+    hashPath === "#home"
   ) {
     return "dashboard";
   }
 
-  if (hash === ONBOARDING_HASH || hash === "#onboarding") {
+  if (hashPath === ONBOARDING_HASH || hashPath === "#onboarding") {
     return "onboarding";
   }
 
-  if (hash === FAQ_HASH || hash === "#faq") {
+  if (hashPath === FAQ_HASH || hashPath === "#faq") {
     return "faq";
   }
 
-  if (hash === DOCS_HASH || hash === "#docs") {
+  if (hashPath === DOCS_HASH || hashPath === "#docs") {
     return "docs";
   }
 
@@ -242,7 +243,12 @@ function syncPageFromLocation() {
   const currentHash = String(window.location.hash ?? "")
     .trim()
     .toLowerCase();
-  if (currentHash === "" || currentHash === "#/" || currentHash === "#home") {
+  const currentHashPath = currentHash.split("?")[0] ?? "";
+  if (
+    currentHashPath === "" ||
+    currentHashPath === "#/" ||
+    currentHashPath === "#home"
+  ) {
     window.history.replaceState(
       null,
       "",
@@ -252,6 +258,16 @@ function syncPageFromLocation() {
 
   portalView.currentPage = resolveCurrentPageFromLocation();
   updateDocumentTitle();
+}
+
+function navigateToDocsSection(sectionId) {
+  const nextHash = `${DOCS_HASH}?section=${encodeURIComponent(sectionId)}`;
+  if (window.location.hash !== nextHash) {
+    window.location.hash = nextHash;
+    return;
+  }
+
+  syncPageFromLocation();
 }
 
 function navigateToPage(page) {
@@ -2436,6 +2452,9 @@ export function initPortalController() {
     },
     openDocs: () => {
       navigateToPage("docs");
+    },
+    openDocsSection: (sectionId: string) => {
+      navigateToDocsSection(sectionId);
     },
     openOnboarding: () => {
       navigateToPage("onboarding");

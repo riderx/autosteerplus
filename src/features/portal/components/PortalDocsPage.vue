@@ -180,6 +180,65 @@
           </div>
         </section>
 
+        <section id="service-mode-reset" :class="panelClass">
+          <div :class="panelHeadingClass">
+            <div :class="sectionTextStackClass">
+              <p :class="panelLabelClass">Update recovery</p>
+              <h2 :class="sectionTitleClass">
+                If 2026.8.6 already started downloading
+              </h2>
+            </div>
+          </div>
+          <p :class="['mt-4', mutedTextClass]">
+            If the car already queued 2026.8.6, the practical recovery is to go
+            into Service Mode and use `Software reinstall`. That clears the
+            downloaded package and usually stops the car from proposing that
+            update again for a while.
+          </p>
+          <div :class="detailGridClass">
+            <article :class="nestedCardClass">
+              <span :class="panelLabelClass">What to do</span>
+              <strong>Enter Service Mode, then use Software reinstall</strong>
+              <ol :class="orderedListClass">
+                <li>Open `Controls`, then open `Software`.</li>
+                <li>
+                  Touch and hold the large `MODEL` text until the access-code
+                  field appears.
+                </li>
+                <li>Type `service`, then confirm to enter Service Mode.</li>
+                <li>
+                  You should now see the red Service Mode overlay or border.
+                </li>
+              </ol>
+              <p :class="mutedTextClass">
+                Once Service Mode is open, use the software update path below
+                and tap `Software reinstall` to clear the downloaded 2026.8.6
+                package.
+              </p>
+              <ol :class="orderedListClass">
+                <li>Open `Car`.</li>
+                <li>Open `Software update`.</li>
+                <li>Tap the `Software reinstall` button.</li>
+                <li>
+                  Leave Wi-Fi off, remove the saved SSID, and keep updates on
+                  `Standard` if you still need to avoid 2026.8.6.
+                </li>
+              </ol>
+            </article>
+            <article :class="nestedCardClass">
+              <span :class="panelLabelClass">Reference</span>
+              <strong>Service Mode software update screen</strong>
+              <PortalZoomableImage
+                :src="serviceModeImage"
+                alt="Tesla Service Mode screen showing the Software reinstall action used to clear a downloaded 2026.8.6 update"
+                preview-aspect-class="aspect-[16/10]"
+                preview-image-class="object-cover"
+                preview-object-position="center center"
+              />
+            </article>
+          </div>
+        </section>
+
         <section :class="panelClass">
           <div :class="panelHeadingClass">
             <div :class="sectionTextStackClass">
@@ -470,12 +529,14 @@
 
 <script setup lang="ts">
 import { Capacitor } from "@capacitor/core";
+import { nextTick, onMounted, watch } from "vue";
 import { kPage } from "konsta/vue";
 
 import fsdInActionImage from "../../../../fsd_in_Action.JPG";
 import portalReferenceImage from "../../../../IMG_0541.PNG";
 import profileSetActionDoneCarScreenImage from "../../../../profile_set_action_done_car_screen.jpg";
 import seeDriveProfileImage from "../../../../see_drive_profile.PNG";
+import serviceModeImage from "../../../../service_mode.jpg";
 import setDriveProfileFromWheelImage from "../../../../set_drive_profile_from_wheel.jpg";
 import PortalActionButton from "./PortalActionButton.vue";
 import PortalRadiusCheck from "./PortalRadiusCheck.vue";
@@ -489,6 +550,7 @@ import {
   mutedTextClass,
   nestedCardClass,
   neutralBadgeClass,
+  orderedListClass,
   pageHeaderClass,
   pageTitleClass,
   panelClass,
@@ -503,6 +565,37 @@ import {
   stepGridClass,
 } from "../ui";
 import { portalActions, portalView } from "../view-model";
+
+function docsSectionFromHash() {
+  const rawHash = String(window.location.hash ?? "").trim();
+  const query = rawHash.split("?")[1] ?? "";
+  const params = new URLSearchParams(query);
+  return params.get("section");
+}
+
+async function scrollToRequestedDocsSection() {
+  const sectionId = docsSectionFromHash();
+  if (!sectionId || portalView.currentPage !== "docs") {
+    return;
+  }
+
+  await nextTick();
+  document.getElementById(sectionId)?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
+onMounted(() => {
+  void scrollToRequestedDocsSection();
+});
+
+watch(
+  () => portalView.currentPage,
+  () => {
+    void scrollToRequestedDocsSection();
+  },
+);
 
 const isNativeApp = Capacitor.isNativePlatform();
 const bluefyUrl = "https://apps.apple.com/app/id1492822055";

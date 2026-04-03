@@ -51,6 +51,7 @@ export interface PortalActions {
   login: () => Promise<void>;
   signInWithPasskey: () => Promise<void>;
   openDocs: () => void;
+  openDocsSection: (sectionId: string) => void;
   openOnboarding: () => void;
   openIdentifyCar: () => void;
   openFaq: () => void;
@@ -90,6 +91,7 @@ export const portalActions: PortalActions = {
   login: noopAsync,
   signInWithPasskey: noopAsync,
   openDocs: noopVoid,
+  openDocsSection: noopVoid,
   openOnboarding: noopVoid,
   openIdentifyCar: noopVoid,
   openFaq: noopVoid,
