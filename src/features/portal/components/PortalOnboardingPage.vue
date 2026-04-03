@@ -231,7 +231,7 @@
           <div v-if="selectedInstallGuide && vehicleSelectionState.canInstall" class="onboarding-video-shell onboarding-video-shell-preview">
             <iframe
               class="onboarding-video-frame"
-              :src="selectedInstallGuide.embedUrl"
+              :src="selectedInstallEmbedUrl"
               :title="selectedInstallGuide.videoTitle"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowfullscreen
@@ -444,6 +444,7 @@
 </template>
 
 <script setup lang="ts">
+import { Capacitor } from '@capacitor/core';
 import { computed, nextTick, ref, watch } from 'vue';
 import { kPage } from 'konsta/vue';
 
@@ -467,6 +468,7 @@ interface InstallGuide {
   id: InstallGuideId;
   title: string;
   videoTitle: string;
+  videoId: string;
   videoUrl: string;
   embedUrl: string;
   steps: InstallGuideStep[];
@@ -581,6 +583,7 @@ const installGuides: InstallGuide[] = [
     id: 'highland',
     title: 'Model 3 Highland install guide',
     videoTitle: 'Model 3 Highland Autosteerplus install',
+    videoId: 'AFFVvfFIPFY',
     videoUrl: 'https://www.youtube.com/watch?v=AFFVvfFIPFY',
     embedUrl: 'https://www.youtube.com/embed/AFFVvfFIPFY?rel=0',
     steps: [
@@ -610,6 +613,7 @@ const installGuides: InstallGuide[] = [
     id: 'legacy',
     title: 'Old Model 3 / Juniper install guide',
     videoTitle: 'Old Model 3 and Juniper Autosteerplus install',
+    videoId: 'ifwJNZgykVI',
     videoUrl: 'https://www.youtube.com/watch?v=ifwJNZgykVI',
     embedUrl: 'https://www.youtube.com/embed/ifwJNZgykVI?rel=0',
     steps: [
@@ -711,6 +715,7 @@ const carOptions: CarOption[] = [
 
 const supportedVersions = new Set(['2026.2.9', '2026.2.9.1', '2026.2.9.2', '2026.2.9.3', '2026.8.3']);
 const popularSoftwareVersions = ['2026.8.3', '2026.2.9.3', '2026.8.6'];
+const isNativeApp = Capacitor.isNativePlatform();
 
 const hasDevice = ref<boolean | null>(null);
 const hasFsd = ref<boolean | null>(null);
@@ -801,6 +806,17 @@ const selectedInstallGuide = computed(() => {
   }
 
   return installGuides.find((entry) => entry.id === selectedCar.value?.guideId) ?? null;
+});
+const selectedInstallEmbedUrl = computed(() => {
+  if (!selectedInstallGuide.value) {
+    return '';
+  }
+
+  if (!isNativeApp) {
+    return selectedInstallGuide.value.embedUrl;
+  }
+
+  return `https://asp.tslap.store/yt/player/${selectedInstallGuide.value.videoId}`;
 });
 const canProceedToInstall = computed(() => hasDevice.value === true && (hasFsd.value === true || reviewedFsdOptions.value));
 const normalizedSoftwareVersion = computed(() => softwareVersion.value.trim().toLowerCase());
