@@ -21,6 +21,9 @@
             <PortalActionButton id="connect-first-button" :disabled="portalView.connectDisabled" @click="portalActions.connect()">
               Connect Device
             </PortalActionButton>
+            <PortalActionButton variant="ghost" @click="portalActions.openOnboarding()">
+              Start Onboarding
+            </PortalActionButton>
             <PortalActionButton variant="ghost" @click="portalActions.openDocs()">
               View Docs
             </PortalActionButton>

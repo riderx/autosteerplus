@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">autosteerplus</string>
+    <string name="title_activity_main">autosteerplus</string>
+    <string name="package_name">com.autosteerplus.app</string>
+    <string name="custom_url_scheme">com.autosteerplus.app</string>
+</resources>

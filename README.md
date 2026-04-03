@@ -159,6 +159,28 @@ Important notes:
 - BLE testing must be done on a physical iPhone
 - the app relies on the live backend, so session/auth/API behavior still depends on the published service
 
+## Android Development
+
+The Android platform is included in this repository under [android](/Users/martindonadieu/Projects/autosteerplus/android).
+
+Sync web assets and plugins:
+
+```bash
+bun run cap:sync
+```
+
+Open the Android project:
+
+```bash
+bun run android:open
+```
+
+Notes:
+
+- the generated app id is shared with the Capacitor config: `com.autosteerplus.app`
+- Capacitor Android is pinned alongside the other Capacitor packages
+- the Bluetooth LE plugin is synced into the Android project during `cap:sync`
+
 ## Web Deployment
 
 The repo includes a Cloudflare Workers static-assets deploy config for:
@@ -184,6 +206,18 @@ Current config uses:
 - SPA-style asset fallback
 
 If the deploy succeeds but the domain returns `NXDOMAIN`, the worker is published but the hostname is still missing in DNS/custom-domain provisioning for the `tslap.store` zone. That is a Cloudflare zone-side issue, not a Vite build issue.
+
+### GitHub Actions auto deploy
+
+The repo also includes automatic web deployment from `main` via:
+
+- [.github/workflows/deploy-web.yml](/Users/martindonadieu/Projects/autosteerplus/.github/workflows/deploy-web.yml)
+
+Required GitHub secret:
+
+- `CLOUDFLARE_API_TOKEN`
+
+The workflow installs with `bun`, builds the Vite app, and runs `bun run deploy:web`.
 
 ## Bluetooth Behavior
 
@@ -234,6 +268,9 @@ bun run cap:sync
 
 # open Xcode project
 bun run ios:open
+
+# open Android Studio project
+bun run android:open
 
 # deploy web fork to Cloudflare
 bun run deploy:web

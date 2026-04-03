@@ -24,6 +24,9 @@
       >
         Refresh Status
       </PortalActionButton>
+      <PortalActionButton variant="ghost" @click="portalActions.openOnboarding()">
+        Onboarding
+      </PortalActionButton>
       <PortalActionButton variant="ghost" @click="portalActions.openDocs()">
         Docs
       </PortalActionButton>
