@@ -29,20 +29,23 @@ function renderFatalError(error: unknown): void {
   document.body.prepend(banner);
 }
 
-async function bootstrapNativeEnvironment(): Promise<void> {
+async function bootstrapEnvironment(): Promise<void> {
   document.documentElement.dataset.platform = Capacitor.getPlatform();
 
-  if (!Capacitor.isNativePlatform()) {
+  if (Capacitor.isNativePlatform()) {
+    installPortalFetchBridge();
+    await bootstrapPortalSession();
+    installWebBluetoothShim();
     return;
   }
 
-  installPortalFetchBridge();
-  await bootstrapPortalSession();
-  installWebBluetoothShim();
+  if (import.meta.env.DEV) {
+    await bootstrapPortalSession();
+  }
 }
 
 async function main(): Promise<void> {
-  await bootstrapNativeEnvironment();
+  await bootstrapEnvironment();
   createApp(App).mount('#app');
 }
 

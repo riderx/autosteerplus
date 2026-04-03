@@ -30,6 +30,11 @@ const OTA_TAIL_FLUSH_WINDOW_BYTES = DEFAULT_OTA_CHUNK_SIZE * 2;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const PASSWORD_MIN_LENGTH = 15;
+const DASHBOARD_HASH = "#/";
+const DOCS_HASH = "#/docs";
+const ONBOARDING_HASH = "#/onboarding";
+const FAQ_HASH = "#/faq";
+const ADVANCED_MODE_STORAGE_KEY = "autosteerplus.advanced-mode";
 let initialized = false;
 const dom = {
   loginChallengeWidget: null,
@@ -114,8 +119,36 @@ function scheduleTurnstileRenderRetry() {
   }, 250);
 }
 
+function userHasAdminRole(user = state.user) {
+  if (!user || typeof user !== "object") {
+    return false;
+  }
+
+  const directFlags = [user.isAdmin, user.is_admin, user.admin];
+  if (directFlags.some((value) => value === true)) {
+    return true;
+  }
+
+  const roleValues = [user.role, user.userRole, user.accessRole, user.accountType, user.type]
+    .map((value) => String(value ?? "").trim().toLowerCase())
+    .filter(Boolean);
+
+  if (roleValues.some((value) => value === "admin" || value === "administrator")) {
+    return true;
+  }
+
+  const collections = [user.roles, user.permissions, user.groups, user.accessGroups];
+  return collections.some((collection) =>
+    Array.isArray(collection) &&
+    collection.some((value) => {
+      const normalized = String(value ?? "").trim().toLowerCase();
+      return normalized === "admin" || normalized === "administrator";
+    })
+  );
+}
+
 function hasAdminPanelAccess() {
-  return state.authenticated;
+  return state.authenticated && (state.adminPasskeySetupRequired || userHasAdminRole());
 }
 
 function passkeySetupGateVisible() {
@@ -124,6 +157,81 @@ function passkeySetupGateVisible() {
 
 function interactionGateVisible() {
   return passwordGateVisible() || passkeySetupGateVisible();
+}
+
+function resolveCurrentPageFromLocation() {
+  const hash = String(window.location.hash ?? "").trim().toLowerCase();
+  if (hash === ONBOARDING_HASH || hash === "#onboarding") {
+    return "onboarding";
+  }
+
+  if (hash === FAQ_HASH || hash === "#faq") {
+    return "faq";
+  }
+
+  if (hash === DOCS_HASH || hash === "#docs") {
+    return "docs";
+  }
+
+  return "dashboard";
+}
+
+function updateDocumentTitle() {
+  if (portalView.currentPage === "docs") {
+    document.title = "autosteerplus docs";
+    return;
+  }
+
+  if (portalView.currentPage === "onboarding") {
+    document.title = "autosteerplus onboarding";
+    return;
+  }
+
+  if (portalView.currentPage === "faq") {
+    document.title = "autosteerplus faq";
+    return;
+  }
+
+  document.title = "autosteerplus";
+}
+
+function syncPageFromLocation() {
+  portalView.currentPage = resolveCurrentPageFromLocation();
+  updateDocumentTitle();
+}
+
+function navigateToPage(page) {
+  const nextHash = page === "docs"
+    ? DOCS_HASH
+    : page === "onboarding"
+      ? ONBOARDING_HASH
+      : page === "faq"
+        ? FAQ_HASH
+        : DASHBOARD_HASH;
+  if (window.location.hash !== nextHash) {
+    window.location.hash = nextHash;
+    return;
+  }
+
+  syncPageFromLocation();
+}
+
+function readStoredAdvancedMode() {
+  try {
+    return window.localStorage.getItem(ADVANCED_MODE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setAdvancedMode(enabled) {
+  portalView.advancedMode = Boolean(enabled);
+
+  try {
+    window.localStorage.setItem(ADVANCED_MODE_STORAGE_KEY, portalView.advancedMode ? "1" : "0");
+  } catch {
+    // Ignore storage failures and keep the in-memory state.
+  }
 }
 
 function updatePortalControls() {
@@ -2020,6 +2128,7 @@ export function initPortalController() {
 
   initialized = true;
   dom.loginChallengeWidget = document.querySelector("#login-challenge-widget");
+  portalView.advancedMode = readStoredAdvancedMode();
 
   assignPortalActions({
     login: async () => {
@@ -2039,6 +2148,21 @@ export function initPortalController() {
         setLoginFeedback(error.message);
         log(`Passkey sign-in failed: ${error.message}`, "error");
       }
+    },
+    openDocs: () => {
+      navigateToPage("docs");
+    },
+    openOnboarding: () => {
+      navigateToPage("onboarding");
+    },
+    openFaq: () => {
+      navigateToPage("faq");
+    },
+    openDashboard: () => {
+      navigateToPage("dashboard");
+    },
+    toggleAdvancedMode: () => {
+      setAdvancedMode(!portalView.advancedMode);
     },
     logout: async () => {
       try {
@@ -2308,6 +2432,9 @@ export function initPortalController() {
       }
     }
   );
+
+  window.addEventListener("hashchange", syncPageFromLocation);
+  syncPageFromLocation();
 
   setConnectionState(false);
   setUpdatingState(false);

@@ -1,8 +1,8 @@
 <template>
-  <main id="auth-shell" class="auth-shell" :hidden="portalView.authenticated">
+  <main id="auth-shell" class="auth-shell" :hidden="portalView.authenticated || portalView.currentPage !== 'dashboard'">
     <section class="hero hero-auth">
       <p class="eyebrow">Tesla FSD</p>
-      <h1 class="hero-title">Device Manager</h1>
+      <h1 class="hero-title">autosteerplus</h1>
       <p class="hero-copy">
         Sign in to access firmware installs, device controls, and update guidance for your approved hardware.
       </p>
@@ -53,6 +53,15 @@
         <button id="login-submit" class="button button-primary" type="submit">Sign In</button>
         <button id="login-passkey-button" class="button button-secondary" type="button" @click="portalActions.signInWithPasskey()">
           Use Passkey
+        </button>
+        <button class="button button-ghost" type="button" @click="portalActions.openOnboarding()">
+          Start Onboarding
+        </button>
+        <button class="button button-ghost" type="button" @click="portalActions.openDocs()">
+          View Docs
+        </button>
+        <button class="button button-ghost" type="button" @click="portalActions.openFaq()">
+          FAQ
         </button>
       </form>
     </section>

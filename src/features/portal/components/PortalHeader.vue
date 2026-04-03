@@ -1,7 +1,7 @@
 <template>
   <header class="hero">
     <p class="eyebrow">Tesla FSD</p>
-    <h1 class="hero-title">Tesla FSD Device Manager</h1>
+    <h1 class="hero-title">autosteerplus</h1>
     <p class="hero-copy">
       OTA updates and device diagnostics.
     </p>
@@ -14,6 +14,12 @@
       </button>
       <button id="refresh-button" class="button button-ghost" type="button" :disabled="portalView.refreshDisabled" @click="portalActions.refreshStatus()">
         Refresh Status
+      </button>
+      <button class="button button-ghost" type="button" @click="portalActions.openDocs()">
+        Docs
+      </button>
+      <button class="button button-ghost" type="button" @click="portalActions.toggleAdvancedMode()">
+        {{ portalView.advancedMode ? 'Basic Mode' : 'Advanced Mode' }}
       </button>
       <button
         id="change-password-button"
