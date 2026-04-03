@@ -10,7 +10,7 @@
     :clear="variant === 'ghost'"
     :tonal="variant === 'secondary'"
     rounded
-    class="portal-action-button"
+    class="min-h-11 max-w-full shrink-0 px-4 text-[0.95rem] font-semibold tracking-[-0.01em]"
     :class="variantClass"
   >
     <slot />
@@ -47,7 +47,7 @@ const variantClass = computed(() => {
   }
 
   if (props.variant === 'ghost') {
-    return '!text-[#0a60ff]';
+    return '!text-[#0a60ff] !px-0';
   }
 
   return '!bg-[#0a60ff] !text-white !shadow-sm';

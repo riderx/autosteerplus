@@ -1,7 +1,9 @@
 <template>
   <k-page class="docs-page portal-page" :hidden="portalView.currentPage !== 'docs'">
     <div class="portal-content-shell">
-      <k-navbar large transparent title="Autosteerplus docs" class="portal-navbar" />
+      <header class="px-1 pb-2 pt-1">
+        <h1 class="m-0 text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]">Autosteerplus docs</h1>
+      </header>
 
       <main class="docs-layout">
       <section class="panel docs-summary-panel">
@@ -288,7 +290,7 @@
 
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core';
-import { kChip, kNavbar, kPage } from 'konsta/vue';
+import { kChip, kPage } from 'konsta/vue';
 
 import fsdVisualisationImage from '../../../../fsd_visualisation.png';
 import PortalActionButton from './PortalActionButton.vue';

@@ -29,11 +29,19 @@ The hosted web experience is a fork of `fsd.teslaandroid.com`. The native app is
 - `TypeScript`
 - `Vite`
 - `Konsta UI` with iOS styling
+- `Tailwind CSS` for UI styling
 - `Capacitor 8`
 - `@capacitor-community/bluetooth-le`
 - `Wrangler 4` for web deployment
 
 Package management and scripts use `bun`.
+
+## Styling Policy
+
+- Use Tailwind utility classes for UI work.
+- Do not add new product styling in custom CSS files.
+- `src/features/portal/styles.css` exists as legacy styling that should be reduced over time, not expanded.
+- If a visual change is needed, prefer changing the Vue template classes instead of writing new CSS selectors.
 
 ## How It Works
 
@@ -103,7 +111,7 @@ High-value files and directories:
 - [src/features/portal/components](/Users/martindonadieu/Projects/autosteerplus/src/features/portal/components)
   Componentized portal pages and panels
 - [src/features/portal/styles.css](/Users/martindonadieu/Projects/autosteerplus/src/features/portal/styles.css)
-  Shared portal styling
+  Legacy portal styling only; do not keep growing it for new UI work
 - [src/features/portal/theme.css](/Users/martindonadieu/Projects/autosteerplus/src/features/portal/theme.css)
   Konsta/Tailwind theme entrypoint
 

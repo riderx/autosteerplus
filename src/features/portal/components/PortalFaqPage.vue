@@ -1,7 +1,9 @@
 <template>
   <k-page class="faq-page portal-page" :hidden="portalView.currentPage !== 'faq'">
     <div class="portal-content-shell">
-      <k-navbar large transparent title="Autosteerplus faq" class="portal-navbar" />
+      <header class="px-1 pb-2 pt-1">
+        <h1 class="m-0 text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]">Autosteerplus faq</h1>
+      </header>
 
       <main class="faq-layout">
       <section class="panel faq-panel">
@@ -143,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { kChip, kNavbar, kPage } from 'konsta/vue';
+import { kChip, kPage } from 'konsta/vue';
 
 import PortalActionButton from './PortalActionButton.vue';
 import { portalActions, portalView } from '../view-model';

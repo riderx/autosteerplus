@@ -1,7 +1,9 @@
 <template>
   <k-page class="onboarding-page portal-page" :hidden="portalView.currentPage !== 'onboarding'">
     <div class="portal-content-shell">
-      <k-navbar large transparent title="Autosteerplus onboarding" class="portal-navbar" />
+      <header class="px-1 pb-2 pt-1">
+        <h1 class="m-0 text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]">Autosteerplus onboarding</h1>
+      </header>
 
       <main class="onboarding-layout">
       <section class="panel">
@@ -443,7 +445,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { kNavbar, kPage } from 'konsta/vue';
+import { kPage } from 'konsta/vue';
 
 import fsdVisualisationImage from '../../../../fsd_visualisation.png';
 import PortalActionButton from './PortalActionButton.vue';

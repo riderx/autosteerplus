@@ -7,6 +7,7 @@ Read this before changing code.
 ## Core Rules
 
 - Always use `bun` or `bunx`, never `npm` or `npx`.
+- For UI work, use Tailwind utility classes. Do not add new custom CSS rules unless the user explicitly asks for an exception.
 - Prefer the existing project structure and current UX direction over generic Capacitor boilerplate.
 - If you open a browser for inspection, use headless mode unless the user explicitly needs to interact with it.
 - If you create a PR, wait for CI to finish, fix failures, then resolve review comments only after they are actually posted.
@@ -43,6 +44,7 @@ Do not move the main dashboard back to bare `#/`.
 
 - Keep the UI as close to vanilla iOS / Cupertino as possible.
 - Use `Konsta UI` patterns and the current light iOS styling direction.
+- Tailwind is the styling system for UI changes. Do not keep extending `styles.css` for new product UI work.
 - The app must work well on iPhone widths and on aspect ratios close to `4:3`.
 - Avoid reintroducing heavy custom dark themes or generic dashboard styling.
 - Do not duplicate the same CTA in multiple places if the user only needs one obvious action.
@@ -140,6 +142,7 @@ Important:
 - Keep shared state in `src/features/portal/view-model.ts`.
 - Keep portal orchestration in `src/features/portal/controller.ts`.
 - Keep the native/web bootstrap behavior in `src/main.ts` and `src/runtime/*`.
+- Treat `src/features/portal/styles.css` as legacy styling. Prefer Tailwind utilities in the Vue templates instead of adding or growing custom CSS.
 - When adding native functionality, keep Capacitor package versions aligned.
 
 If you change native platforms:

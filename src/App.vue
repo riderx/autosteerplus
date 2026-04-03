@@ -1,6 +1,8 @@
 <template>
-  <k-app theme="ios" class="portal-konsta-app">
-    <div class="page-shell">
+  <k-app theme="ios" class="min-h-screen bg-transparent">
+    <div
+      class="mx-auto w-full max-w-260 px-[calc(0.85rem+env(safe-area-inset-right,0px))] pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pl-[calc(0.85rem+env(safe-area-inset-left,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] max-[640px]:w-full max-[640px]:px-[calc(0.5rem+env(safe-area-inset-right,0px))] max-[640px]:pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] max-[640px]:pl-[calc(0.5rem+env(safe-area-inset-left,0px))]"
+    >
       <PortalAuthShell />
       <PortalDashboardPage />
       <PortalDocsPage />
