@@ -11,6 +11,9 @@ const config: CapacitorConfig = {
     CapacitorHttp: {
       enabled: true,
     },
+    SystemBars: {
+      insetsHandling: 'css',
+    },
     BluetoothLe: {
       displayStrings: {
         scanning: 'Scanning for Tesla FSD devices...',
