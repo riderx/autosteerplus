@@ -1,6 +1,6 @@
 export const portalPageClass = "block bg-transparent";
 export const portalShellClass = "mx-auto grid w-full max-w-240 gap-6";
-export const pageHeaderClass = "px-1 pb-2 pt-1";
+export const pageHeaderClass = "px-1 pb-2 pt-1 max-sm:px-0.5";
 export const pageTitleClass =
   "m-0 text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]";
 

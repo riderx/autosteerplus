@@ -367,6 +367,13 @@ const faqSections: FaqSection[] = [
           },
         ],
       },
+      {
+        question: "Can I update the dongle while driving?",
+        paragraphs: [
+          "No. Do not try to update the dongle while driving.",
+          "Only run firmware updates when the car is safely parked and you can stay with the process until it finishes.",
+        ],
+      },
     ],
   },
   {

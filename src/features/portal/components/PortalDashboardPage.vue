@@ -2,7 +2,7 @@
   <k-page id="app-shell" class="bg-transparent" :hidden="!portalView.authenticated || portalView.currentPage !== 'dashboard'">
     <PortalPasswordGate />
     <PortalPasskeySetupGate />
-    <div class="mx-auto w-full max-w-260 px-[calc(1rem+env(safe-area-inset-right,0px))] pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pl-[calc(1rem+env(safe-area-inset-left,0px))] pt-[calc(0.6rem+env(safe-area-inset-top,0px))] max-[640px]:w-[calc(100%-1rem)]">
+    <div class="mx-auto grid w-full max-w-260 gap-6">
       <PortalHeader />
 
       <main id="dashboard" class="grid grid-cols-12 gap-6">

@@ -5,7 +5,7 @@
     :hidden="portalView.authenticated || portalView.currentPage !== 'dashboard'"
   >
     <div
-      class="mx-auto grid min-h-full w-full max-w-180 content-center gap-4 px-0 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] max-[640px]:w-[calc(100%-1rem)]"
+      class="mx-auto grid min-h-full w-full max-w-180 content-center gap-4"
     >
       <k-card
         id="login-panel"
