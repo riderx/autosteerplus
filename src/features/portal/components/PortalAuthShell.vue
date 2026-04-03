@@ -1,36 +1,14 @@
 <template>
   <k-page id="auth-shell" class="block bg-transparent" :hidden="portalView.authenticated || portalView.currentPage !== 'dashboard'">
     <div class="mx-auto grid min-h-full w-full max-w-180 content-center gap-4 px-0 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top,0px))] max-[640px]:w-[calc(100%-1rem)]">
-      <k-block
-        strong-ios
-        inset-ios
-        class="relative mb-4 overflow-hidden rounded-[22px] border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.98)] px-[1.4rem] pb-[1.45rem] pt-[1.35rem] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_rgba(15,23,42,0.05)]"
-      >
-        <h1 class="m-0 whitespace-nowrap text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]">Device Portal</h1>
-        <p class="mt-3 max-w-[42rem] text-[1rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
-          Sign in to access firmware installs, device controls, and update guidance for your approved hardware.
-        </p>
-      </k-block>
-
       <k-card
         id="login-panel"
         class="relative overflow-hidden rounded-[22px] border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.98)] p-[1.15rem] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_rgba(15,23,42,0.05)]"
       >
-        <div class="mb-4 flex items-center justify-end">
-          <button
-            type="button"
-            class="text-[0.95rem] font-semibold text-[#0a60ff]"
-            @click="showLoginHelp = !showLoginHelp"
-          >
-            {{ showLoginHelp ? 'Hide sign-in help' : 'Need sign-in help?' }}
-          </button>
-        </div>
-        <div
-          v-if="showLoginHelp"
-          class="mb-4 rounded-[18px] border border-[rgba(10,96,255,0.12)] bg-[rgba(10,96,255,0.04)] px-4 py-3"
-        >
-          <p id="auth-note" class="m-0 text-[0.98rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
-            {{ portalView.authNote }}
+        <div class="grid gap-3">
+          <h1 class="m-0 whitespace-nowrap text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]">Device Portal</h1>
+          <p class="m-0 max-w-[42rem] text-[1rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
+            Sign in to access firmware installs, device controls, and update guidance for your approved hardware.
           </p>
         </div>
         <p id="login-feedback" class="auth-warning" :hidden="portalView.loginFeedback === ''">
@@ -61,6 +39,25 @@
               required
             >
           </label>
+          <div class="grid gap-3">
+            <div class="flex items-center justify-end">
+              <button
+                type="button"
+                class="text-[0.95rem] font-semibold text-[#0a60ff]"
+                @click="showLoginHelp = !showLoginHelp"
+              >
+                {{ showLoginHelp ? 'Hide sign-in help' : 'Need sign-in help?' }}
+              </button>
+            </div>
+            <div
+              v-if="showLoginHelp"
+              class="rounded-[18px] border border-[rgba(10,96,255,0.12)] bg-[rgba(10,96,255,0.04)] px-4 py-3"
+            >
+              <p id="auth-note" class="m-0 text-[0.98rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
+                {{ portalView.authNote }}
+              </p>
+            </div>
+          </div>
           <div id="login-challenge-shell" class="min-h-[4.25rem]" :hidden="!portalView.loginChallengeVisible">
             <div id="login-challenge-widget"></div>
           </div>
@@ -103,7 +100,7 @@
 <script setup lang="ts">
 import { Capacitor } from '@capacitor/core';
 import { ref } from 'vue';
-import { kBlock, kCard, kPage } from 'konsta/vue';
+import { kCard, kPage } from 'konsta/vue';
 
 import PortalActionButton from './PortalActionButton.vue';
 import { portalActions, portalView } from '../view-model';
