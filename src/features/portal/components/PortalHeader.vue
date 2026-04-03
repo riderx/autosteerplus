@@ -6,7 +6,7 @@
   >
     <p class="mb-1.5 text-[0.74rem] font-semibold uppercase tracking-[0.08em] text-[#6e6e73]">Tesla FSD</p>
     <h1 class="m-0 text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]">Autosteerplus</h1>
-    <p class="mt-3 max-w-[42rem] text-[1rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
+    <p class="mt-3 max-w-2xl text-[1rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
       OTA updates and device diagnostics.
     </p>
     <div class="mt-6 flex flex-wrap items-center gap-3">

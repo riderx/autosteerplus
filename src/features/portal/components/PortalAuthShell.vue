@@ -7,7 +7,7 @@
       >
         <div class="grid gap-3">
           <h1 class="m-0 whitespace-nowrap text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]">Device Portal</h1>
-          <p class="m-0 max-w-[42rem] text-[1rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
+          <p class="m-0 max-w-2xl text-[1rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
             Sign in to access firmware installs, device controls, and update guidance for your approved hardware.
           </p>
         </div>

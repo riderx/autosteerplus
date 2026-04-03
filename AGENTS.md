@@ -8,6 +8,7 @@ Read this before changing code.
 
 - Always use `bun` or `bunx`, never `npm` or `npx`.
 - For UI work, use Tailwind utility classes. Do not add new custom CSS rules unless the user explicitly asks for an exception.
+- When a canonical Tailwind utility exists, use it instead of arbitrary values. Example: prefer `max-w-2xl` over `max-w-[42rem]`.
 - Prefer the existing project structure and current UX direction over generic Capacitor boilerplate.
 - If you open a browser for inspection, use headless mode unless the user explicitly needs to interact with it.
 - If you create a PR, wait for CI to finish, fix failures, then resolve review comments only after they are actually posted.
@@ -45,6 +46,7 @@ Do not move the main dashboard back to bare `#/`.
 - Keep the UI as close to vanilla iOS / Cupertino as possible.
 - Use `Konsta UI` patterns and the current light iOS styling direction.
 - Tailwind is the styling system for UI changes. Do not keep extending `styles.css` for new product UI work.
+- Prefer the latest canonical Tailwind class names and scales over arbitrary bracket values whenever the framework already provides an equivalent utility.
 - The app must work well on iPhone widths and on aspect ratios close to `4:3`.
 - Avoid reintroducing heavy custom dark themes or generic dashboard styling.
 - Do not duplicate the same CTA in multiple places if the user only needs one obvious action.
