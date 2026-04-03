@@ -182,7 +182,7 @@
           </div>
         </div>
         <p class="muted-copy">
-          Pick the model first, then enter the build year. From that, the app will tell you whether this onboarding
+          Pick the model first, then choose the matching build-year range. From that, the app will tell you whether this onboarding
           path is covered and which install video applies.
         </p>
         <div class="onboarding-choice-grid">
@@ -200,17 +200,22 @@
             <p class="muted-copy">{{ model.body }}</p>
           </button>
         </div>
-        <label class="field onboarding-version-field">
-          <span>Build year</span>
-          <input
-            v-model="buildYear"
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="e.g. 2024"
+        <div v-if="modelYearOptions.length" class="onboarding-choice-grid onboarding-year-grid">
+          <button
+            v-for="option in modelYearOptions"
+            :key="option.id"
+            type="button"
+            class="onboarding-choice"
+            :class="{ 'is-active': selectedYearBand === option.id }"
+            :aria-pressed="selectedYearBand === option.id"
+            @click="selectYearBand(option.id)"
           >
-        </label>
-        <p class="muted-copy panel-note">
+            <span class="metric-label">{{ option.kicker }}</span>
+            <strong>{{ option.title }}</strong>
+            <p class="muted-copy">{{ option.body }}</p>
+          </button>
+        </div>
+        <p v-if="modelYearOptions.length" class="muted-copy panel-note">
           Use the year shown in the registration, Tesla app, or the door sticker. You do not need to guess Ryzen,
           Intel, HW3, or HW4 here.
         </p>
@@ -246,7 +251,8 @@
         </div>
         <p class="muted-copy">
           Enter the car software version before installing. This tells you whether the current release is confirmed,
-          mixed, blocked, or still unknown for this setup.
+          mixed, blocked, or still unknown for this setup. The Tesla software version decides install safety. The
+          expected FSD branch comes from the car profile you picked above.
         </p>
         <label class="field onboarding-version-field">
           <span>Car software version</span>
@@ -258,14 +264,25 @@
             placeholder="e.g. 2026.8.3"
           >
         </label>
-        <div class="onboarding-fsd-grid">
+        <div class="onboarding-version-presets">
+          <button
+            v-for="version in popularSoftwareVersions"
+            :key="version"
+            type="button"
+            class="docs-badge onboarding-version-chip"
+            :class="{ 'is-active': softwareVersion === version }"
+            @click="softwareVersion = version"
+          >
+            {{ version }}
+          </button>
+        </div>
+        <div v-if="normalizedSoftwareVersion" class="onboarding-step4-grid">
           <article class="onboarding-support-card onboarding-support-card-accent">
-            <p class="panel-label">Expected FSD stack</p>
-            <h3>{{ selectedCar.expectedFsdTitle }}</h3>
-            <p class="muted-copy">
-              {{ selectedCar.expectedFsdBody }}
-            </p>
+            <p class="panel-label">Expected FSD version</p>
+            <h3>{{ expectedFsdState.title }}</h3>
+            <p class="muted-copy">{{ expectedFsdState.body }}</p>
             <ul class="docs-inline-list">
+              <li v-for="item in expectedFsdState.items" :key="item">{{ item }}</li>
               <li>{{ selectedCar.installNote }}</li>
               <li>If the car behavior does not match this profile, stop and ask in Slack before proceeding</li>
             </ul>
@@ -279,6 +296,10 @@
             </ul>
           </article>
         </div>
+        <p v-if="normalizedSoftwareVersion" class="muted-copy panel-note onboarding-step4-note">
+          Want the exact FSD build number, not just 12 / 13 / 14? Ask the Tesla app Service AI assistant after checking
+          the car profile and software version here.
+        </p>
         <div class="hero-actions">
           <PortalActionButton
             variant="ghost"
@@ -298,21 +319,22 @@
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 5</p>
-            <h2>{{ selectedInstallGuide.title }} install guide</h2>
+            <h2>Do the install</h2>
           </div>
         </div>
         <p class="muted-copy">
-          Watch the video once before touching trim. If your interior or connector path does not match, stop and ask
-          before forcing anything.
+          You already matched the correct video above. Use the checklist below while you work. If the interior or
+          connector path does not match what you saw in the selected video, stop and ask before forcing anything.
         </p>
-        <div class="onboarding-video-shell">
-          <iframe
-            class="onboarding-video-frame"
-            :src="selectedInstallGuide.embedUrl"
-            :title="selectedInstallGuide.videoTitle"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen
-          ></iframe>
+        <div class="hero-actions">
+          <PortalActionButton
+            variant="ghost"
+            :href="selectedInstallGuide.videoUrl"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open the selected video again
+          </PortalActionButton>
         </div>
         <div class="docs-step-grid">
           <article v-for="step in selectedInstallGuide.steps" :key="step.title" class="docs-step-card">
@@ -443,6 +465,7 @@ interface InstallGuide {
   id: InstallGuideId;
   title: string;
   videoTitle: string;
+  videoUrl: string;
   embedUrl: string;
   steps: InstallGuideStep[];
 }
@@ -459,7 +482,20 @@ interface CarOption {
   expectedFsd: string;
   expectedFsdTitle: string;
   expectedFsdBody: string;
+  featureTitle: string;
+  featureBody: string;
+  featureHighlights: string[];
+  exactFsdHint: string;
   installNote: string;
+}
+
+type YearBandId = 'older' | 'newer' | 'unsure';
+
+interface YearBandOption {
+  id: YearBandId;
+  kicker: string;
+  title: string;
+  body: string;
 }
 
 interface CompatibilityState {
@@ -543,6 +579,7 @@ const installGuides: InstallGuide[] = [
     id: 'highland',
     title: 'Model 3 Highland install guide',
     videoTitle: 'Model 3 Highland Autosteerplus install',
+    videoUrl: 'https://www.youtube.com/watch?v=AFFVvfFIPFY',
     embedUrl: 'https://www.youtube.com/embed/AFFVvfFIPFY?rel=0',
     steps: [
       {
@@ -571,6 +608,7 @@ const installGuides: InstallGuide[] = [
     id: 'legacy',
     title: 'Old Model 3 / Juniper install guide',
     videoTitle: 'Old Model 3 and Juniper Autosteerplus install',
+    videoUrl: 'https://www.youtube.com/watch?v=ifwJNZgykVI',
     embedUrl: 'https://www.youtube.com/embed/ifwJNZgykVI?rel=0',
     steps: [
       {
@@ -607,9 +645,18 @@ const carOptions: CarOption[] = [
     body: 'Choose this for Highland / refresh cars, roughly late 2023 build and newer.',
     yearHint: 'Build year hint: usually late 2023 or newer.',
     profileNote: 'This is the newer Model 3 refresh. Use the Highland video. You do not need to know Ryzen or HW4 to pick this path.',
-    expectedFsd: 'Expected FSD: HW4 cars should get v13 or newer when the Tesla side is set correctly.',
-    expectedFsdTitle: 'Newer Model 3 profile',
-    expectedFsdBody: 'Highland cars are on the newer path. When everything is aligned, they should be on the newer FSD generation rather than the older fallback stack.',
+    expectedFsd: 'If the car is on 2026.2.9.x, expect FSD 14-family on HW4. If it is on 2026.8.3, expect FSD 13.',
+    expectedFsdTitle: 'Newer HW4 / Highland stack',
+    expectedFsdBody: 'Highland cars should be on the newer supervised branch, not the older HW3 fallback path. Think newer-stack behavior first.',
+    featureTitle: 'Newer-stack supervised behavior',
+    featureBody: 'On this profile, the point is not just unlocking the menu. The goal is to get the newer real-world supervised behavior set the HW4 branch is known for.',
+    featureHighlights: [
+      'Expect the newer branch: usually v13 today, with later v14-family builds over time.',
+      'Lane changes, turn handling, and roundabouts should feel closer to the full supervised stack.',
+      'Actually Smart Summon should move to the larger unlocked range once the install works.',
+      'If the cabin camera can see you properly, nagging should feel lighter than the restricted fallback path.',
+    ],
+    exactFsdHint: 'Open the Tesla app, go to Service, ask the AI assistant for the current FSD version, and use that as the exact-number check for this newer-car profile.',
     installNote: 'Install path: use the dedicated Highland video and do not follow the legacy trim route.',
   },
   {
@@ -621,9 +668,18 @@ const carOptions: CarOption[] = [
     body: 'Choose this for older Model 3 cars, roughly 2017 to 2023 build years.',
     yearHint: 'Build year hint: usually 2017 to 2023.',
     profileNote: 'This is the older Model 3 path. Use the shared legacy video. Version checks matter more here, especially around 2026.8.6.',
-    expectedFsd: 'Expected FSD: HW3 cars generally get v12.6.4, which the community treats as the HW3 equivalent path.',
-    expectedFsdTitle: 'Older Model 3 profile',
-    expectedFsdBody: 'Expect the older FSD stack rather than the newer refresh-car path. Results on 2026.8.6 are mixed, so stay on the confirmed versions only.',
+    expectedFsd: 'Older Model 3 / HW3 cars are on the FSD 12 branch for now, not FSD 13 or 14.',
+    expectedFsdTitle: 'HW3 / legacy stack',
+    expectedFsdBody: 'Older Model 3 cars should be thought of as the HW3 branch. Expect v12.6.4-style behavior, not the newer HW4 v13/v14 family.',
+    featureTitle: 'Older-stack supervised behavior',
+    featureBody: 'This profile still aims for the real supervised behavior set, but on the HW3 branch. The gains matter most in how the car behaves, not in a bigger version number.',
+    featureHighlights: [
+      'Expect the HW3 branch: usually FSD v12.6.4.',
+      'You should still gain the practical improvements users care about: lane changes, turns, and roundabouts.',
+      'Actually Smart Summon should still expand to the larger unlocked circle if the install took effect.',
+      'This path is more sensitive around 2026.8.6, so the firmware compatibility result matters more here.',
+    ],
+    exactFsdHint: 'Use the Tesla app Service AI assistant to ask for the current FSD version. On this older-car profile, the answer typically points to v12.6.4 rather than the newer HW4 branch.',
     installNote: 'Install path: use the shared legacy / Juniper video and stop if the connector path does not match.',
   },
   {
@@ -635,39 +691,102 @@ const carOptions: CarOption[] = [
     body: 'Choose this for Juniper / refresh Model Y cars, roughly 2025 build and newer.',
     yearHint: 'Build year hint: usually 2025 or newer.',
     profileNote: 'Juniper follows the shared legacy / Juniper install video. You can identify it by model and build year instead of trying to determine the chip yourself.',
-    expectedFsd: 'Expected FSD: newer HW4 / Ryzen-side cars should be on v13 or newer, not the HW3 fallback branch.',
-    expectedFsdTitle: 'Model Y Juniper profile',
-    expectedFsdBody: 'Juniper should follow the newer-car path once FSD access is correctly set on the Tesla side.',
+    expectedFsd: 'If the car is on 2026.2.9.x, expect FSD 14-family on HW4. If it is on 2026.8.3, expect FSD 13.',
+    expectedFsdTitle: 'Newer Model Y / Juniper stack',
+    expectedFsdBody: 'Juniper should follow the newer-car path once FSD access is set correctly on the Tesla side. Treat it like the newer HW4 family, not the older fallback branch.',
+    featureTitle: 'Newer-stack supervised behavior',
+    featureBody: 'This should behave like the newer supervised path: the practical benefit is the richer driving stack, not just an unlocked toggle.',
+    featureHighlights: [
+      'Expect the newer branch: usually v13 now, with later v14-family updates as Tesla rolls them out.',
+      'The unlocked behavior should include better lane changes, turns, and roundabouts.',
+      'Actually Smart Summon should expand to the larger unlocked range when the install succeeds.',
+      'If the cabin camera sees you properly, the experience should feel closer to real supervised FSD than the regional fallback.',
+    ],
+    exactFsdHint: 'To confirm the exact FSD version, ask the Tesla app Service AI assistant. On this Juniper profile, you should expect the newer HW4 branch rather than the older HW3 number.',
     installNote: 'Install path: use the shared old Model 3 / Juniper video, then verify with the Summon range check.',
   },
 ];
 
 const supportedVersions = new Set(['2026.2.9', '2026.2.9.1', '2026.2.9.2', '2026.2.9.3', '2026.8.3']);
+const popularSoftwareVersions = ['2026.8.3', '2026.2.9.3', '2026.8.6'];
 
 const hasDevice = ref<boolean | null>(null);
 const hasFsd = ref<boolean | null>(null);
 const reviewedFsdOptions = ref(false);
 const selectedModel = ref<ModelId | null>(null);
-const buildYear = ref('');
+const selectedYearBand = ref<YearBandId | null>(null);
 const softwareVersion = ref('');
 const showVerification = ref(false);
 
-const parsedBuildYear = computed(() => {
-  const year = Number.parseInt(buildYear.value.trim(), 10);
-  return Number.isFinite(year) ? year : null;
+const modelYearOptions = computed<YearBandOption[]>(() => {
+  if (selectedModel.value === '3') {
+    return [
+      {
+        id: 'older',
+        kicker: 'Year range',
+        title: '2017 to 2023',
+        body: 'Model 3 before Highland.',
+      },
+      {
+        id: 'newer',
+        kicker: 'Year range',
+        title: 'Late 2023 / 2024 and newer',
+        body: 'Model 3 Highland / refresh.',
+      },
+      {
+        id: 'unsure',
+        kicker: 'Need to check',
+        title: 'I am not sure',
+        body: 'Stop here and confirm the year before touching trim.',
+      },
+    ];
+  }
+
+  if (selectedModel.value === 'y') {
+    return [
+      {
+        id: 'older',
+        kicker: 'Year range',
+        title: '2020 to 2024',
+        body: 'Model Y before Juniper.',
+      },
+      {
+        id: 'newer',
+        kicker: 'Year range',
+        title: '2025 and newer',
+        body: 'Model Y Juniper / refresh.',
+      },
+      {
+        id: 'unsure',
+        kicker: 'Need to check',
+        title: 'I am not sure',
+        body: 'Stop here and confirm the year before touching trim.',
+      },
+    ];
+  }
+
+  return [];
 });
 
 const selectedCarId = computed<CarOptionId | null>(() => {
-  if (!selectedModel.value || !parsedBuildYear.value) {
+  if (!selectedModel.value) {
     return null;
   }
 
   if (selectedModel.value === '3') {
-    return parsedBuildYear.value >= 2024 ? 'model3-highland' : 'model3-legacy';
+    if (selectedYearBand.value === 'older') {
+      return 'model3-legacy';
+    }
+
+    if (selectedYearBand.value === 'newer') {
+      return 'model3-highland';
+    }
+
+    return null;
   }
 
   if (selectedModel.value === 'y') {
-    return parsedBuildYear.value >= 2025 ? 'modely-juniper' : null;
+    return selectedYearBand.value === 'newer' ? 'modely-juniper' : null;
   }
 
   return null;
@@ -690,18 +809,8 @@ const vehicleSelectionState = computed<CompatibilityState>(() => {
       canInstall: false,
       status: 'idle',
       title: 'Choose your Tesla model first',
-      body: 'Start with Model 3, Y, S, or X. Then enter the build year so the app can tell you whether this onboarding path is covered.',
+      body: 'Start with Model 3, Y, S, or X. Then choose the matching year range so the app can tell you whether this onboarding path is covered.',
       items: ['This step should decide coverage and video before you touch trim.'],
-    };
-  }
-
-  if (!parsedBuildYear.value) {
-    return {
-      canInstall: false,
-      status: 'idle',
-      title: 'Enter the build year',
-      body: 'The build year is enough for this step. Use the year from the Tesla app, registration, or door sticker.',
-      items: ['Example: 2024 for Highland Model 3, 2025 for Juniper Model Y.'],
     };
   }
 
@@ -718,7 +827,27 @@ const vehicleSelectionState = computed<CompatibilityState>(() => {
     };
   }
 
-  if (selectedModel.value === 'y' && parsedBuildYear.value < 2025) {
+  if (!selectedYearBand.value) {
+    return {
+      canInstall: false,
+      status: 'idle',
+      title: 'Choose the year range',
+      body: 'Use the registration, Tesla app, or door sticker and pick the matching year band instead of typing it manually.',
+      items: ['The year range is enough for this step. You do not need to identify Ryzen, Intel, HW3, or HW4 yourself.'],
+    };
+  }
+
+  if (selectedYearBand.value === 'unsure') {
+    return {
+      canInstall: false,
+      status: 'warn',
+      title: 'Confirm the year first',
+      body: 'Do not guess here. Check the Tesla app, registration, or door sticker, then come back and choose the correct year range.',
+      items: ['This step is meant to choose the right install path before you touch trim.'],
+    };
+  }
+
+  if (selectedModel.value === 'y' && selectedYearBand.value === 'older') {
     return {
       canInstall: false,
       status: 'warn',
@@ -764,6 +893,69 @@ const vehicleSelectionCardClass = computed(() => {
   }
 
   return 'onboarding-support-card-neutral';
+});
+
+const expectedFsdState = computed(() => {
+  if (!selectedCar.value || !normalizedSoftwareVersion.value) {
+    return {
+      title: 'Pick a version first',
+      body: 'Select the Tesla software version on the car to map it to the expected FSD branch.',
+      items: [] as string[],
+    };
+  }
+
+  if (selectedCar.value.compatibilityGroup === 'older') {
+    return {
+      title: 'Expect FSD 12 on this HW3 path',
+      body: 'All older Model 3 / HW3 cars are still on the FSD 12 branch for now. Do not expect FSD 13 or 14 on this path today.',
+      items: [
+        'Current practical expectation: FSD v12.6.4 on HW3.',
+        'The Tesla software version matters for compatibility, but not because HW3 jumps to v13 or v14 here.',
+      ],
+    };
+  }
+
+  if (normalizedSoftwareVersion.value.startsWith('2026.2.9')) {
+    return {
+      title: 'Expect FSD 14 on this HW4 path',
+      body: 'On newer HW4 cars, the 2026.2.9.x software line maps to the FSD 14 family rather than the older FSD 13 branch.',
+      items: [
+        'Community reference: 2026.2.9.3 apparently contains FSD 14.2.2.5 on HW4.',
+        'Use this as the newer-car expectation for Highland and Juniper profiles.',
+      ],
+    };
+  }
+
+  if (normalizedSoftwareVersion.value === '2026.8.3') {
+    return {
+      title: 'Expect FSD 13 on this HW4 path',
+      body: 'On newer HW4 cars, 2026.8.3 is associated with the FSD 13 branch, not the FSD 14 family.',
+      items: [
+        'Do not assume the higher Tesla software number means a newer FSD branch than 2026.2.9.x.',
+        'Use the compatibility card separately to decide whether this branch is safe to install on.',
+      ],
+    };
+  }
+
+  if (normalizedSoftwareVersion.value === '2026.8.6') {
+    return {
+      title: 'This is still the newer HW4 branch, but blocked here',
+      body: 'Treat 2026.8.6 as part of the newer-car line, but do not use it for the supported HW4 install path right now.',
+      items: [
+        'The app should treat this as blocked on newer Highland / Juniper cars.',
+        'Wait for updated community guidance before proceeding on this version.',
+      ],
+    };
+  }
+
+  return {
+    title: 'Likely newer HW4 branch',
+    body: 'This is still a newer-car HW4 profile, but this Tesla software version is not mapped precisely enough here to say FSD 13 or 14 with confidence.',
+    items: [
+      'Use the Tesla app Service AI assistant if you need the exact FSD branch for this unknown software version.',
+      'Do not rely on guesswork when the firmware is outside the known mapping.',
+    ],
+  };
 });
 
 const compatibilityState = computed<CompatibilityState>(() => {
@@ -854,14 +1046,14 @@ const compatibilityCardClass = computed(() => {
   return 'onboarding-support-card-neutral';
 });
 
-watch([selectedModel, buildYear, softwareVersion], () => {
+watch([selectedModel, selectedYearBand, softwareVersion], () => {
   showVerification.value = false;
 });
 
 watch([hasDevice, hasFsd], () => {
   if (!canProceedToInstall.value) {
     selectedModel.value = null;
-    buildYear.value = '';
+    selectedYearBand.value = null;
     softwareVersion.value = '';
     showVerification.value = false;
   }
@@ -880,7 +1072,7 @@ function selectHasFsd(value: boolean) {
   reviewedFsdOptions.value = value;
   if (!value) {
     selectedModel.value = null;
-    buildYear.value = '';
+    selectedYearBand.value = null;
     softwareVersion.value = '';
     showVerification.value = false;
   }
@@ -892,5 +1084,10 @@ function acknowledgeFsdOptions() {
 
 function selectModel(modelId: ModelId) {
   selectedModel.value = modelId;
+  selectedYearBand.value = null;
+}
+
+function selectYearBand(yearBandId: YearBandId) {
+  selectedYearBand.value = yearBandId;
 }
 </script>

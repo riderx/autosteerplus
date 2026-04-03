@@ -50,6 +50,14 @@
               <PortalActionButton variant="ghost" href="https://fsd.teslaandroid.com" target="_blank" rel="noreferrer">
                 Original portal
               </PortalActionButton>
+              <PortalActionButton
+                variant="ghost"
+                href="https://github.com/riderx/autosteerplus/tree/main"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub repo
+              </PortalActionButton>
             </div>
           </article>
           <article class="docs-step-card">

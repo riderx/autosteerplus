@@ -68,6 +68,7 @@ Do not move the main dashboard back to bare `#/`.
 - Docs, onboarding, and FAQ should feel like first-class product pages, not debug pages.
 - Watch spacing carefully: inner cards must not visually crash into surrounding text or action rows.
 - If cards are inside a larger panel, preserve real top margin before the inner grid starts.
+- Never rely on implicit document flow for card spacing. Every inner card grid or follow-up card block must have explicit top margin, especially in onboarding, docs, and FAQ panels.
 - FAQ collapsibles must have a visible chevron in the closed state.
 - Avoid useless top hero pills or duplicate section intros.
 
