@@ -1,13 +1,13 @@
 <template>
-  <section class="panel panel-status">
+  <k-card class="panel panel-status">
     <div class="panel-heading">
       <div>
         <p class="panel-label">Device Snapshot</p>
         <h2>Runtime status</h2>
       </div>
-      <button id="reboot-button" class="button button-ghost" type="button" :disabled="portalView.rebootDisabled" @click="portalActions.rebootDevice()">
+      <PortalActionButton id="reboot-button" variant="ghost" :disabled="portalView.rebootDisabled" @click="portalActions.rebootDevice()">
         Reboot Device
-      </button>
+      </PortalActionButton>
     </div>
     <div class="status-grid">
       <article class="metric-card">
@@ -43,9 +43,12 @@
         <strong id="ota-state">{{ portalView.otaState }}</strong>
       </article>
     </div>
-  </section>
+  </k-card>
 </template>
 
 <script setup lang="ts">
+import { kCard } from 'konsta/vue';
+
+import PortalActionButton from './PortalActionButton.vue';
 import { portalActions, portalView } from '../view-model';
 </script>

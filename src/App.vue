@@ -1,15 +1,18 @@
 <template>
-  <div class="page-shell">
-    <PortalAuthShell />
-    <PortalDashboardPage />
-    <PortalDocsPage />
-    <PortalOnboardingPage />
-    <PortalFaqPage />
-  </div>
+  <k-app theme="ios" class="portal-konsta-app">
+    <div class="page-shell">
+      <PortalAuthShell />
+      <PortalDashboardPage />
+      <PortalDocsPage />
+      <PortalOnboardingPage />
+      <PortalFaqPage />
+    </div>
+  </k-app>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import { kApp } from 'konsta/vue';
 
 import PortalAuthShell from './features/portal/components/PortalAuthShell.vue';
 import PortalDashboardPage from './features/portal/components/PortalDashboardPage.vue';

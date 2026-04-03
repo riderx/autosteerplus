@@ -1,45 +1,53 @@
 <template>
-  <div class="faq-page" :hidden="portalView.currentPage !== 'faq'">
-    <header class="hero hero-auth faq-hero">
-      <p class="eyebrow">FAQ</p>
-      <h1 class="hero-title">autosteerplus</h1>
-      <p class="hero-copy">
-        Community-sourced answers collected from the `#fsd` channel discussions, organized into one place for fast
-        reference.
-      </p>
-      <div class="docs-badge-row">
-        <span class="docs-badge">Generated from `#fsd` channel discussions</span>
-        <a
-          class="docs-badge"
-          href="https://teslaandroid.com/blogs/news/the-diagnostic-tool-facts-over-drama"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Facts over drama article
-        </a>
-      </div>
-      <div class="hero-actions">
-        <button class="button button-primary" type="button" @click="portalActions.openOnboarding()">
-          Start Onboarding
-        </button>
-        <a
-          class="button button-ghost"
-          href="https://teslaandroid.slack.com"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Slack Community
-        </a>
-        <button class="button button-ghost" type="button" @click="portalActions.openDocs()">
-          Docs
-        </button>
-        <button class="button button-secondary" type="button" @click="portalActions.openDashboard()">
-          {{ portalView.authenticated ? 'Back to Dashboard' : 'Back to Sign In' }}
-        </button>
-      </div>
-    </header>
+  <k-page class="faq-page portal-page" :hidden="portalView.currentPage !== 'faq'">
+    <div class="portal-content-shell">
+      <k-navbar large transparent title="Autosteerplus faq" class="portal-navbar" />
 
-    <main class="faq-layout">
+      <main class="faq-layout">
+      <section class="panel faq-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-label">Overview</p>
+            <h2>Community-sourced answers in one place</h2>
+          </div>
+        </div>
+        <p class="muted-copy panel-note">
+          This page consolidates the repeated questions from the `#fsd` discussions so people can check versions,
+          delivery, compatibility, and safety notes quickly.
+        </p>
+        <div class="docs-badge-row">
+          <k-chip class="docs-badge">Generated from `#fsd` channel discussions</k-chip>
+          <k-chip
+            component="a"
+            href="https://teslaandroid.com/blogs/news/the-diagnostic-tool-facts-over-drama"
+            target="_blank"
+            rel="noreferrer"
+            class="docs-badge"
+          >
+            Facts over drama article
+          </k-chip>
+        </div>
+        <div class="hero-actions docs-top-actions">
+          <PortalActionButton @click="portalActions.openOnboarding()">
+            Start Onboarding
+          </PortalActionButton>
+          <PortalActionButton
+            variant="ghost"
+            href="https://teslaandroid.slack.com"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Slack Community
+          </PortalActionButton>
+          <PortalActionButton variant="ghost" @click="portalActions.openDocs()">
+            Docs
+          </PortalActionButton>
+          <PortalActionButton variant="secondary" @click="portalActions.openDashboard()">
+            {{ portalView.authenticated ? 'Back to Dashboard' : 'Back to Sign In' }}
+          </PortalActionButton>
+        </div>
+      </section>
+
       <section class="panel faq-panel">
         <div class="panel-heading">
           <div>
@@ -129,11 +137,15 @@
           </div>
         </details>
       </section>
-    </main>
-  </div>
+      </main>
+    </div>
+  </k-page>
 </template>
 
 <script setup lang="ts">
+import { kChip, kNavbar, kPage } from 'konsta/vue';
+
+import PortalActionButton from './PortalActionButton.vue';
 import { portalActions, portalView } from '../view-model';
 
 interface FaqLink {
@@ -210,7 +222,7 @@ const faqSections: FaqSection[] = [
     title: 'General questions',
     entries: [
       {
-        question: 'What does autosteerplus do?',
+        question: 'What does Autosteerplus do?',
         paragraphs: [
           'It removes the geofencing restriction on FSD so Full Self-Driving (Supervised) can work in regions where Tesla has not officially launched it yet.',
           'It also enables unrestricted Actually Smart Summon with a much larger range, and improves lane change plus Autosteer turn radius.',

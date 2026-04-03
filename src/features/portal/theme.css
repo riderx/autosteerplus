@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "konsta/vue/theme.css";
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: #f2f2f7;
+}
+
+body {
+  overscroll-behavior-y: none;
+}

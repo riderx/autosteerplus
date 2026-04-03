@@ -1,31 +1,9 @@
 <template>
-  <div class="onboarding-page" :hidden="portalView.currentPage !== 'onboarding'">
-    <header class="hero hero-auth onboarding-hero">
-      <p class="eyebrow">Guided Setup</p>
-      <h1 class="hero-title">autosteerplus onboarding</h1>
-      <p class="hero-copy">
-        Follow this guided path to confirm you have the right hardware, the right FSD access, the correct install
-        video for your car, and the final radius check that proves the install worked.
-      </p>
-      <div class="docs-badge-row">
-        <span class="docs-badge">You need the autosteerplus device physically with you</span>
-        <span class="docs-badge">You also need FSD purchased outright or an active subscription</span>
-        <span class="docs-badge docs-badge-warning">Do not update AMD cars to 2026.8.6 yet</span>
-      </div>
-      <div class="hero-actions">
-        <button class="button button-primary" type="button" @click="portalActions.openFaq()">
-          FAQ
-        </button>
-        <button class="button button-ghost" type="button" @click="portalActions.openDocs()">
-          Docs
-        </button>
-        <button class="button button-secondary" type="button" @click="portalActions.openDashboard()">
-          {{ portalView.authenticated ? 'Back to Dashboard' : 'Back to Sign In' }}
-        </button>
-      </div>
-    </header>
+  <k-page class="onboarding-page portal-page" :hidden="portalView.currentPage !== 'onboarding'">
+    <div class="portal-content-shell">
+      <k-navbar large transparent title="Autosteerplus onboarding" class="portal-navbar" />
 
-    <main class="onboarding-layout">
+      <main class="onboarding-layout">
       <section class="panel">
         <div class="panel-heading">
           <div>
@@ -33,7 +11,22 @@
             <h2>What this flow checks</h2>
           </div>
         </div>
-        <div class="docs-summary-grid">
+        <p class="muted-copy panel-note">
+          Follow this guided path to confirm hardware readiness, FSD setup, the right install video for your car,
+          and the final radius check that proves the install worked.
+        </p>
+        <div class="hero-actions docs-top-actions">
+          <PortalActionButton @click="portalActions.openFaq()">
+            FAQ
+          </PortalActionButton>
+          <PortalActionButton variant="ghost" @click="portalActions.openDocs()">
+            Docs
+          </PortalActionButton>
+          <PortalActionButton variant="secondary" @click="portalActions.openDashboard()">
+            {{ portalView.authenticated ? 'Back to Dashboard' : 'Back to Sign In' }}
+          </PortalActionButton>
+        </div>
+        <div class="docs-summary-grid onboarding-summary-grid">
           <article v-for="card in summaryCards" :key="card.title" class="docs-summary-card">
             <span class="metric-label">{{ card.kicker }}</span>
             <strong>{{ card.title }}</strong>
@@ -75,23 +68,22 @@
         </div>
         <div v-if="hasDevice === false" class="onboarding-support-card">
           <p class="panel-label">Buy the tool</p>
-          <h3>Order the autosteerplus device first</h3>
+          <h3>Order the Autosteerplus device first</h3>
           <p class="muted-copy">
             The onboarding flow only makes sense once the hardware is in your hands. Use the official product page
             below, then come back here for the install guide and verification steps.
           </p>
           <div class="hero-actions">
-            <a
-              class="button button-primary"
+            <PortalActionButton
               href="https://teslaandroid.com/products/tesla-diagnostic-tool"
               target="_blank"
               rel="noreferrer"
             >
               Buy the device
-            </a>
-            <button class="button button-ghost" type="button" @click="selectHasDevice(true)">
+            </PortalActionButton>
+            <PortalActionButton variant="ghost" @click="selectHasDevice(true)">
               I have it now, continue
-            </button>
+            </PortalActionButton>
           </div>
         </div>
       </section>
@@ -172,12 +164,12 @@
             </article>
           </div>
           <div class="hero-actions">
-            <button class="button button-primary" type="button" @click="acknowledgeFsdOptions()">
+            <PortalActionButton @click="acknowledgeFsdOptions()">
               FSD is set, continue
-            </button>
-            <button class="button button-ghost" type="button" @click="portalActions.openFaq()">
+            </PortalActionButton>
+            <PortalActionButton variant="ghost" @click="portalActions.openFaq()">
               Read full FAQ
-            </button>
+            </PortalActionButton>
           </div>
         </div>
       </section>
@@ -186,40 +178,66 @@
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 3</p>
-            <h2>What car profile matches your vehicle?</h2>
+            <h2>What Tesla do you have?</h2>
           </div>
         </div>
         <p class="muted-copy">
-          Pick the closest match first. That lets the app tell you which FSD stack you should expect and which
-          install path makes sense.
+          Pick the model first, then enter the build year. From that, the app will tell you whether this onboarding
+          path is covered and which install video applies.
         </p>
         <div class="onboarding-choice-grid">
           <button
-            v-for="car in carOptions"
-            :key="car.id"
+            v-for="model in modelOptions"
+            :key="model.id"
             type="button"
             class="onboarding-choice"
-            :class="{ 'is-active': selectedCarId === car.id }"
-            :aria-pressed="selectedCarId === car.id"
-            @click="selectCar(car.id)"
+            :class="{ 'is-active': selectedModel === model.id }"
+            :aria-pressed="selectedModel === model.id"
+            @click="selectModel(model.id)"
           >
-            <span class="metric-label">{{ car.kicker }}</span>
-            <strong>{{ car.title }}</strong>
-            <p class="muted-copy">{{ car.body }}</p>
+            <span class="metric-label">{{ model.kicker }}</span>
+            <strong>{{ model.title }}</strong>
+            <p class="muted-copy">{{ model.body }}</p>
           </button>
         </div>
-        <article v-if="selectedCar" class="onboarding-support-card onboarding-support-card-accent">
-          <p class="panel-label">Car profile result</p>
-          <h3>{{ selectedCar.title }}</h3>
-          <p class="muted-copy">{{ selectedCar.profileNote }}</p>
+        <label class="field onboarding-version-field">
+          <span>Build year</span>
+          <input
+            v-model="buildYear"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="e.g. 2024"
+          >
+        </label>
+        <p class="muted-copy panel-note">
+          Use the year shown in the registration, Tesla app, or the door sticker. You do not need to guess Ryzen,
+          Intel, HW3, or HW4 here.
+        </p>
+        <article class="onboarding-support-card" :class="vehicleSelectionCardClass">
+          <p class="panel-label">Result</p>
+          <h3>{{ vehicleSelectionState.title }}</h3>
+          <p class="muted-copy">{{ vehicleSelectionState.body }}</p>
           <ul class="docs-inline-list">
-            <li>{{ selectedCar.expectedFsd }}</li>
-            <li>{{ selectedCar.installNote }}</li>
+            <li v-for="item in vehicleSelectionState.items" :key="item">{{ item }}</li>
           </ul>
+          <div v-if="selectedInstallGuide && vehicleSelectionState.canInstall" class="onboarding-video-shell onboarding-video-shell-preview">
+            <iframe
+              class="onboarding-video-frame"
+              :src="selectedInstallGuide.embedUrl"
+              :title="selectedInstallGuide.videoTitle"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <p v-if="selectedInstallGuide && vehicleSelectionState.canInstall" class="muted-copy">
+            This is the install video for your car. The full written step-by-step stays below after the version
+            compatibility check.
+          </p>
         </article>
       </section>
 
-      <section v-if="selectedCar" class="panel">
+      <section v-if="selectedCar && vehicleSelectionState.canInstall" class="panel">
         <div class="panel-heading">
           <div>
             <p class="panel-label">Step 4</p>
@@ -262,17 +280,17 @@
           </article>
         </div>
         <div class="hero-actions">
-          <a
-            class="button button-ghost"
+          <PortalActionButton
+            variant="ghost"
             href="https://teslaandroid.slack.com"
             target="_blank"
             rel="noreferrer"
           >
             Ask in Slack
-          </a>
-          <button class="button button-ghost" type="button" @click="portalActions.openFaq()">
+          </PortalActionButton>
+          <PortalActionButton variant="ghost" @click="portalActions.openFaq()">
             FAQ
-          </button>
+          </PortalActionButton>
         </div>
       </section>
 
@@ -304,20 +322,20 @@
           </article>
         </div>
         <div class="hero-actions">
-          <button class="button button-primary" type="button" @click="showVerification = true">
+          <PortalActionButton @click="showVerification = true">
             I did the install, check if it worked
-          </button>
-          <a
-            class="button button-ghost"
+          </PortalActionButton>
+          <PortalActionButton
+            variant="ghost"
             href="https://teslaandroid.slack.com"
             target="_blank"
             rel="noreferrer"
           >
             Ask in Slack
-          </a>
-          <button class="button button-ghost" type="button" @click="portalActions.openFaq()">
+          </PortalActionButton>
+          <PortalActionButton variant="ghost" @click="portalActions.openFaq()">
             FAQ
-          </button>
+          </PortalActionButton>
         </div>
       </section>
 
@@ -333,6 +351,28 @@
           install took effect.
         </p>
         <PortalRadiusCheck />
+        <div class="docs-step-grid onboarding-visual-check">
+          <article class="docs-step-card">
+            <span class="metric-label">Second check</span>
+            <strong>Compare the FSD driving visualization too</strong>
+            <p class="muted-copy">
+              The larger Summon circle is the quick proof, but you should also compare the in-drive visualization to
+              the expected FSD look. That gives you a second confirmation that the unlocked stack is active.
+            </p>
+            <ul class="docs-inline-list">
+              <li>Check it while the device is still connected.</li>
+              <li>If the visualization still looks like the restricted fallback, verify version compatibility before driving further.</li>
+              <li>When in doubt, compare against the FAQ and ask in Slack before assuming the install failed.</li>
+            </ul>
+          </article>
+          <article class="docs-step-card">
+            <span class="metric-label">Reference</span>
+            <strong>Expected FSD visualization</strong>
+            <div class="docs-visual-media">
+              <img class="docs-visual-image" :src="fsdVisualisationImage" alt="Expected Full Self-Driving visualization when Autosteerplus is working" />
+            </div>
+          </article>
+        </div>
         <div class="onboarding-post-check">
           <div class="onboarding-fsd-grid">
             <article class="onboarding-support-card onboarding-support-card-accent">
@@ -343,8 +383,11 @@
                 the unlocked behavior this tool enables.
               </p>
               <ul class="docs-inline-list">
-                <li>FSD geofence bypass is active while the device stays connected</li>
-                <li>Actually Smart Summon range should be the larger one you just verified</li>
+                <li>Longer Actually Smart Summon range should now be active</li>
+                <li>Real supervised FSD features should be available rather than the regional lockout behavior</li>
+                <li>Roundabouts, lane changes, and turn handling should feel closer to the real FSD stack</li>
+                <li>When the interior camera can see you properly, the experience should have less nagging than the restricted fallback</li>
+                <li>FSD geofence bypass stays active while the device remains connected</li>
                 <li>You can manage the device later from the portal login screen in this app</li>
               </ul>
             </article>
@@ -362,32 +405,103 @@
             </article>
           </div>
           <div class="hero-actions">
-            <button class="button button-ghost" type="button" @click="portalActions.openFaq()">
+            <PortalActionButton variant="ghost" @click="portalActions.openFaq()">
               Know more in FAQ
-            </button>
-            <button class="button button-primary" type="button" @click="portalActions.openDashboard()">
+            </PortalActionButton>
+            <PortalActionButton @click="portalActions.openDashboard()">
               Let's go
-            </button>
+            </PortalActionButton>
           </div>
         </div>
       </section>
-    </main>
-  </div>
+      </main>
+    </div>
+  </k-page>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { kNavbar, kPage } from 'konsta/vue';
 
+import fsdVisualisationImage from '../../../../fsd_visualisation.png';
+import PortalActionButton from './PortalActionButton.vue';
 import PortalRadiusCheck from './PortalRadiusCheck.vue';
 import { portalActions, portalView } from '../view-model';
 
-type CarOptionId = 'highland' | 'legacy';
+type ModelId = '3' | 'y' | 's' | 'x';
+type CarOptionId = 'model3-highland' | 'model3-legacy' | 'modely-juniper';
+type InstallGuideId = 'highland' | 'legacy';
+type CompatibilityGroup = 'newer' | 'older';
+
+interface InstallGuideStep {
+  step: string;
+  title: string;
+  body: string;
+}
+
+interface InstallGuide {
+  id: InstallGuideId;
+  title: string;
+  videoTitle: string;
+  embedUrl: string;
+  steps: InstallGuideStep[];
+}
+
+interface CarOption {
+  id: CarOptionId;
+  guideId: InstallGuideId;
+  compatibilityGroup: CompatibilityGroup;
+  kicker: string;
+  title: string;
+  body: string;
+  yearHint: string;
+  profileNote: string;
+  expectedFsd: string;
+  expectedFsdTitle: string;
+  expectedFsdBody: string;
+  installNote: string;
+}
+
+interface CompatibilityState {
+  canInstall: boolean;
+  status: 'idle' | 'ok' | 'warn' | 'blocked';
+  title: string;
+  body: string;
+  items: string[];
+}
+
+const modelOptions = [
+  {
+    id: '3' as const,
+    kicker: 'Model',
+    title: 'Model 3',
+    body: 'Supported in this onboarding. The build year decides which install path applies.',
+  },
+  {
+    id: 'y' as const,
+    kicker: 'Model',
+    title: 'Model Y',
+    body: 'Only the newer Juniper path is covered in this onboarding flow right now.',
+  },
+  {
+    id: 's' as const,
+    kicker: 'Model',
+    title: 'Model S',
+    body: 'Not covered by the current in-app install videos. This needs manual confirmation first.',
+  },
+  {
+    id: 'x' as const,
+    kicker: 'Model',
+    title: 'Model X',
+    body: 'Not covered by the current in-app install videos. This needs manual confirmation first.',
+  },
+];
 
 const summaryCards = [
   {
     kicker: 'Hardware',
     title: 'Tool in hand first',
-    body: 'If you do not physically have the autosteerplus device yet, buy it before worrying about install steps.',
+    body: 'If you do not physically have the Autosteerplus device yet, buy it before worrying about install steps.',
   },
   {
     kicker: 'Access',
@@ -424,13 +538,11 @@ const fsdCanadaSteps = [
   },
 ];
 
-const carOptions = [
+const installGuides: InstallGuide[] = [
   {
-    id: 'highland' as const,
-    kicker: 'Video A',
-    title: 'Model 3 Highland',
-    body: 'Use the dedicated Highland install video and trim path.',
-    videoTitle: 'Model 3 Highland autosteerplus install',
+    id: 'highland',
+    title: 'Model 3 Highland install guide',
+    videoTitle: 'Model 3 Highland Autosteerplus install',
     embedUrl: 'https://www.youtube.com/embed/AFFVvfFIPFY?rel=0',
     steps: [
       {
@@ -456,11 +568,9 @@ const carOptions = [
     ],
   },
   {
-    id: 'legacy' as const,
-    kicker: 'Video B',
-    title: 'Old Model 3 / Juniper',
-    body: 'Use the shared video for older Model 3 and Juniper cars.',
-    videoTitle: 'Old Model 3 and Juniper autosteerplus install',
+    id: 'legacy',
+    title: 'Old Model 3 / Juniper install guide',
+    videoTitle: 'Old Model 3 and Juniper Autosteerplus install',
     embedUrl: 'https://www.youtube.com/embed/ifwJNZgykVI?rel=0',
     steps: [
       {
@@ -487,22 +597,272 @@ const carOptions = [
   },
 ];
 
+const carOptions: CarOption[] = [
+  {
+    id: 'model3-highland',
+    guideId: 'highland',
+    compatibilityGroup: 'newer',
+    kicker: 'Model 3',
+    title: 'Model 3 Highland',
+    body: 'Choose this for Highland / refresh cars, roughly late 2023 build and newer.',
+    yearHint: 'Build year hint: usually late 2023 or newer.',
+    profileNote: 'This is the newer Model 3 refresh. Use the Highland video. You do not need to know Ryzen or HW4 to pick this path.',
+    expectedFsd: 'Expected FSD: HW4 cars should get v13 or newer when the Tesla side is set correctly.',
+    expectedFsdTitle: 'Newer Model 3 profile',
+    expectedFsdBody: 'Highland cars are on the newer path. When everything is aligned, they should be on the newer FSD generation rather than the older fallback stack.',
+    installNote: 'Install path: use the dedicated Highland video and do not follow the legacy trim route.',
+  },
+  {
+    id: 'model3-legacy',
+    guideId: 'legacy',
+    compatibilityGroup: 'older',
+    kicker: 'Model 3',
+    title: 'Model 3 before Highland',
+    body: 'Choose this for older Model 3 cars, roughly 2017 to 2023 build years.',
+    yearHint: 'Build year hint: usually 2017 to 2023.',
+    profileNote: 'This is the older Model 3 path. Use the shared legacy video. Version checks matter more here, especially around 2026.8.6.',
+    expectedFsd: 'Expected FSD: HW3 cars generally get v12.6.4, which the community treats as the HW3 equivalent path.',
+    expectedFsdTitle: 'Older Model 3 profile',
+    expectedFsdBody: 'Expect the older FSD stack rather than the newer refresh-car path. Results on 2026.8.6 are mixed, so stay on the confirmed versions only.',
+    installNote: 'Install path: use the shared legacy / Juniper video and stop if the connector path does not match.',
+  },
+  {
+    id: 'modely-juniper',
+    guideId: 'legacy',
+    compatibilityGroup: 'newer',
+    kicker: 'Model Y',
+    title: 'Model Y Juniper',
+    body: 'Choose this for Juniper / refresh Model Y cars, roughly 2025 build and newer.',
+    yearHint: 'Build year hint: usually 2025 or newer.',
+    profileNote: 'Juniper follows the shared legacy / Juniper install video. You can identify it by model and build year instead of trying to determine the chip yourself.',
+    expectedFsd: 'Expected FSD: newer HW4 / Ryzen-side cars should be on v13 or newer, not the HW3 fallback branch.',
+    expectedFsdTitle: 'Model Y Juniper profile',
+    expectedFsdBody: 'Juniper should follow the newer-car path once FSD access is correctly set on the Tesla side.',
+    installNote: 'Install path: use the shared old Model 3 / Juniper video, then verify with the Summon range check.',
+  },
+];
+
+const supportedVersions = new Set(['2026.2.9', '2026.2.9.1', '2026.2.9.2', '2026.2.9.3', '2026.8.3']);
+
 const hasDevice = ref<boolean | null>(null);
 const hasFsd = ref<boolean | null>(null);
 const reviewedFsdOptions = ref(false);
-const selectedCarId = ref<CarOptionId | null>(null);
+const selectedModel = ref<ModelId | null>(null);
+const buildYear = ref('');
+const softwareVersion = ref('');
 const showVerification = ref(false);
 
-const selectedCar = computed(() => carOptions.find((entry) => entry.id === selectedCarId.value) ?? null);
-const canProceedToInstall = computed(() => hasDevice.value === true && (hasFsd.value === true || reviewedFsdOptions.value));
+const parsedBuildYear = computed(() => {
+  const year = Number.parseInt(buildYear.value.trim(), 10);
+  return Number.isFinite(year) ? year : null;
+});
 
-watch(selectedCarId, () => {
+const selectedCarId = computed<CarOptionId | null>(() => {
+  if (!selectedModel.value || !parsedBuildYear.value) {
+    return null;
+  }
+
+  if (selectedModel.value === '3') {
+    return parsedBuildYear.value >= 2024 ? 'model3-highland' : 'model3-legacy';
+  }
+
+  if (selectedModel.value === 'y') {
+    return parsedBuildYear.value >= 2025 ? 'modely-juniper' : null;
+  }
+
+  return null;
+});
+
+const selectedCar = computed(() => carOptions.find((entry) => entry.id === selectedCarId.value) ?? null);
+const selectedInstallGuide = computed(() => {
+  if (!selectedCar.value) {
+    return null;
+  }
+
+  return installGuides.find((entry) => entry.id === selectedCar.value?.guideId) ?? null;
+});
+const canProceedToInstall = computed(() => hasDevice.value === true && (hasFsd.value === true || reviewedFsdOptions.value));
+const normalizedSoftwareVersion = computed(() => softwareVersion.value.trim().toLowerCase());
+
+const vehicleSelectionState = computed<CompatibilityState>(() => {
+  if (!selectedModel.value) {
+    return {
+      canInstall: false,
+      status: 'idle',
+      title: 'Choose your Tesla model first',
+      body: 'Start with Model 3, Y, S, or X. Then enter the build year so the app can tell you whether this onboarding path is covered.',
+      items: ['This step should decide coverage and video before you touch trim.'],
+    };
+  }
+
+  if (!parsedBuildYear.value) {
+    return {
+      canInstall: false,
+      status: 'idle',
+      title: 'Enter the build year',
+      body: 'The build year is enough for this step. Use the year from the Tesla app, registration, or door sticker.',
+      items: ['Example: 2024 for Highland Model 3, 2025 for Juniper Model Y.'],
+    };
+  }
+
+  if (selectedModel.value === 's' || selectedModel.value === 'x') {
+    return {
+      canInstall: false,
+      status: 'warn',
+      title: 'Not covered by the current onboarding videos',
+      body: `Model ${selectedModel.value.toUpperCase()} is not covered by the current in-app install videos. Do not continue blindly from this flow.`,
+      items: [
+        'Ask in Slack before attempting the install on S or X.',
+        'The current app video guidance only covers Model 3 Highland, older Model 3, and Model Y Juniper.',
+      ],
+    };
+  }
+
+  if (selectedModel.value === 'y' && parsedBuildYear.value < 2025) {
+    return {
+      canInstall: false,
+      status: 'warn',
+      title: 'This Model Y path is not covered here',
+      body: 'The in-app video currently covers Juniper Model Y only. Older Model Y cars need manual confirmation first.',
+      items: [
+        'If your Model Y is pre-Juniper, ask in Slack before installing.',
+        'Do not assume the Juniper video applies to an older Model Y.',
+      ],
+    };
+  }
+
+  if (!selectedCar.value || !selectedInstallGuide.value) {
+    return {
+      canInstall: false,
+      status: 'warn',
+      title: 'This combination is not mapped yet',
+      body: 'The app could not match your model and year to a safe install path yet.',
+      items: ['Ask in Slack before proceeding.'],
+    };
+  }
+
+  return {
+    canInstall: true,
+    status: 'ok',
+    title: `Covered: ${selectedCar.value.title}`,
+    body: 'This onboarding path is covered. The matching install video is selected below, and the Tesla software version check comes next.',
+    items: [
+      selectedCar.value.yearHint,
+      `Install video: ${selectedInstallGuide.value.title}.`,
+      selectedCar.value.expectedFsd,
+    ],
+  };
+});
+
+const vehicleSelectionCardClass = computed(() => {
+  if (vehicleSelectionState.value.status === 'ok') {
+    return 'onboarding-support-card-success';
+  }
+
+  if (vehicleSelectionState.value.status === 'warn') {
+    return 'onboarding-support-card-warning';
+  }
+
+  return 'onboarding-support-card-neutral';
+});
+
+const compatibilityState = computed<CompatibilityState>(() => {
+  if (!selectedCar.value) {
+    return {
+      canInstall: false,
+      status: 'idle',
+      title: 'Choose your car first',
+      body: 'Pick the closest car profile first so the app can apply the right compatibility guidance.',
+      items: ['If you are unsure, stop and confirm the hardware profile before installing anything.'],
+    };
+  }
+
+  if (!normalizedSoftwareVersion.value) {
+    return {
+      canInstall: false,
+      status: 'idle',
+      title: 'Version check still needed',
+      body: 'Enter the Tesla software version from the car before deciding whether this install is safe to do now.',
+      items: ['Confirmed versions: 2026.2.9 through 2026.2.9.3, and 2026.8.3.'],
+    };
+  }
+
+  if (normalizedSoftwareVersion.value === '2026.8.6') {
+    if (selectedCar.value.compatibilityGroup === 'newer') {
+      return {
+        canInstall: false,
+        status: 'blocked',
+        title: 'Blocked on 2026.8.6 for this newer car path',
+        body: 'Do not proceed on 2026.8.6 on the newer Highland / Juniper side. The bypass is not ready there yet.',
+        items: [
+          'Keep Wi-Fi off and remove saved Wi-Fi if you are trying to avoid this update.',
+          'If the update is already downloaded, you still do not need to install it.',
+        ],
+      };
+    }
+
+    return {
+      canInstall: false,
+      status: 'warn',
+      title: 'Mixed results on 2026.8.6',
+      body: 'Intel / older setups on 2026.8.6 are still community-risky. The safe recommendation is still to wait.',
+      items: [
+        'Do not treat this as a confirmed-good version.',
+        'Ask in Slack before proceeding if you are already on 2026.8.6.',
+      ],
+    };
+  }
+
+  if (supportedVersions.has(normalizedSoftwareVersion.value)) {
+    return {
+      canInstall: true,
+      status: 'ok',
+      title: 'Version looks compatible',
+      body: 'This version is currently in the confirmed-good set from the community guidance. You can move to the install video for your profile.',
+      items: [
+        `Profile match: ${selectedCar.value.title}.`,
+        'Still verify the result with the Summon range check after install.',
+      ],
+    };
+  }
+
+  return {
+    canInstall: false,
+    status: 'warn',
+    title: 'Version not confirmed yet',
+    body: 'This version is not in the known-good list. It may still work, but the app should not tell you to continue blindly.',
+    items: [
+      'Check the FAQ and Slack before installing on an unknown Tesla software version.',
+      'Known-good versions today are 2026.2.9 through 2026.2.9.3 and 2026.8.3.',
+    ],
+  };
+});
+
+const compatibilityCardClass = computed(() => {
+  if (compatibilityState.value.status === 'ok') {
+    return 'onboarding-support-card-success';
+  }
+
+  if (compatibilityState.value.status === 'blocked') {
+    return 'onboarding-support-card-danger';
+  }
+
+  if (compatibilityState.value.status === 'warn') {
+    return 'onboarding-support-card-warning';
+  }
+
+  return 'onboarding-support-card-neutral';
+});
+
+watch([selectedModel, buildYear, softwareVersion], () => {
   showVerification.value = false;
 });
 
 watch([hasDevice, hasFsd], () => {
   if (!canProceedToInstall.value) {
-    selectedCarId.value = null;
+    selectedModel.value = null;
+    buildYear.value = '';
+    softwareVersion.value = '';
     showVerification.value = false;
   }
 });
@@ -519,7 +879,9 @@ function selectHasFsd(value: boolean) {
   hasFsd.value = value;
   reviewedFsdOptions.value = value;
   if (!value) {
-    selectedCarId.value = null;
+    selectedModel.value = null;
+    buildYear.value = '';
+    softwareVersion.value = '';
     showVerification.value = false;
   }
 }
@@ -528,7 +890,7 @@ function acknowledgeFsdOptions() {
   reviewedFsdOptions.value = true;
 }
 
-function selectCar(carId: CarOptionId) {
-  selectedCarId.value = carId;
+function selectModel(modelId: ModelId) {
+  selectedModel.value = modelId;
 }
 </script>

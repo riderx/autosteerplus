@@ -1,6 +1,6 @@
 <template>
   <section id="password-gate" class="password-gate" :hidden="!portalView.passwordGateVisible">
-    <div class="panel panel-password-gate">
+    <k-card class="panel panel-password-gate">
       <div class="panel-heading">
         <div>
           <p class="panel-label">Security</p>
@@ -46,22 +46,24 @@
           >
         </label>
         <div class="password-gate-actions">
-          <button
+          <PortalActionButton
             id="password-gate-cancel"
-            class="button button-secondary"
-            type="button"
+            variant="secondary"
             :hidden="!portalView.passwordGateRequiresCurrent"
             @click="portalActions.closePasswordDialog()"
           >
             Cancel
-          </button>
-          <button class="button button-primary" type="submit">Update Password</button>
+          </PortalActionButton>
+          <PortalActionButton type="submit">Update Password</PortalActionButton>
         </div>
       </form>
-    </div>
+    </k-card>
   </section>
 </template>
 
 <script setup lang="ts">
+import { kCard } from 'konsta/vue';
+
+import PortalActionButton from './PortalActionButton.vue';
 import { portalActions, portalView } from '../view-model';
 </script>

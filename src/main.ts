@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import { Capacitor } from '@capacitor/core';
 import App from './App.vue';
+import './features/portal/theme.css';
 import './features/portal/styles.css';
 import { bootstrapPortalSession, installPortalFetchBridge } from './runtime/portal-session';
 import { installWebBluetoothShim } from './runtime/web-bluetooth-shim';

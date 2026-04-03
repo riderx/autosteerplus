@@ -6,24 +6,21 @@
         <h2>Passkeys</h2>
       </div>
       <div class="hero-actions">
-        <button
+        <PortalActionButton
           id="reload-passkeys-button"
-          class="button button-ghost"
-          type="button"
+          variant="ghost"
           :disabled="portalView.reloadPasskeysDisabled"
           @click="portalActions.reloadPasskeys()"
         >
           Reload Passkeys
-        </button>
-        <button
+        </PortalActionButton>
+        <PortalActionButton
           id="register-passkey-button"
-          class="button button-primary"
-          type="button"
           :disabled="portalView.registerPasskeyDisabled"
           @click="portalActions.registerPasskey()"
         >
           Add Passkey
-        </button>
+        </PortalActionButton>
       </div>
     </div>
     <p id="passkey-note" class="muted-copy panel-note">
@@ -37,9 +34,9 @@
           <p class="user-admin-meta">{{ passkey.secondaryMeta }}</p>
         </div>
         <div class="user-admin-actions">
-          <button class="button button-danger" type="button" :disabled="passkey.deleteDisabled" @click="portalActions.removePasskey(passkey.id)">
+          <PortalActionButton variant="danger" :disabled="passkey.deleteDisabled" @click="portalActions.removePasskey(passkey.id)">
             {{ passkey.deleteLabel }}
-          </button>
+          </PortalActionButton>
         </div>
       </article>
     </div>
@@ -47,5 +44,6 @@
 </template>
 
 <script setup lang="ts">
+import PortalActionButton from './PortalActionButton.vue';
 import { portalActions, portalView } from '../view-model';
 </script>

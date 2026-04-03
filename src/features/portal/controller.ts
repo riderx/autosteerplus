@@ -30,7 +30,7 @@ const OTA_TAIL_FLUSH_WINDOW_BYTES = DEFAULT_OTA_CHUNK_SIZE * 2;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const PASSWORD_MIN_LENGTH = 15;
-const DASHBOARD_HASH = "#/";
+const DASHBOARD_HASH = "#/home";
 const DOCS_HASH = "#/docs";
 const ONBOARDING_HASH = "#/onboarding";
 const FAQ_HASH = "#/faq";
@@ -161,6 +161,10 @@ function interactionGateVisible() {
 
 function resolveCurrentPageFromLocation() {
   const hash = String(window.location.hash ?? "").trim().toLowerCase();
+  if (hash === "" || hash === "#/" || hash === DASHBOARD_HASH || hash === "#home") {
+    return "dashboard";
+  }
+
   if (hash === ONBOARDING_HASH || hash === "#onboarding") {
     return "onboarding";
   }
@@ -196,6 +200,11 @@ function updateDocumentTitle() {
 }
 
 function syncPageFromLocation() {
+  const currentHash = String(window.location.hash ?? "").trim().toLowerCase();
+  if (currentHash === "" || currentHash === "#/" || currentHash === "#home") {
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${DASHBOARD_HASH}`);
+  }
+
   portalView.currentPage = resolveCurrentPageFromLocation();
   updateDocumentTitle();
 }
@@ -1698,7 +1707,9 @@ async function connect() {
   }
 
   if (!navigator.bluetooth) {
-    throw new Error("Web Bluetooth is not available in this browser");
+    throw new Error(
+      "Web Bluetooth is not available in this browser. Use the autosteerplus app, or on iPhone and iPad open the web fork with Bluefy: https://apps.apple.com/app/id1492822055"
+    );
   }
 
   const device = await navigator.bluetooth.requestDevice({
