@@ -1,6 +1,6 @@
-import { reactive } from 'vue';
+import { reactive } from "vue";
 
-export type PortalLogLevel = 'info' | 'warn' | 'error';
+export type PortalLogLevel = "info" | "warn" | "error";
 
 export interface PortalInstallPackageView {
   id: string;
@@ -25,14 +25,14 @@ export interface PortalAdminCustomerView {
   id: number;
   email: string;
   statusLabel: string;
-  statusClass: string;
+  statusTone: string;
   primaryMeta: string;
   secondaryMeta: string;
   accessGroupsInput: string;
   saveGroupsLabel: string;
   saveGroupsDisabled: boolean;
   toggleLabel: string;
-  toggleClass: string;
+  toggleVariant: "secondary" | "danger";
   toggleDisabled: boolean;
   deleteLabel: string;
   deleteDisabled: boolean;
@@ -127,49 +127,54 @@ export function assignPortalActions(actions: Partial<PortalActions>) {
 }
 
 export function defaultAuthNote() {
-  return 'If your account was imported from Shopify, your default username is the email address used on your order and your default password is your Shopify order number. If you placed multiple orders, use the first order number. If you already registered a passkey, you can use it instead of your password.';
+  return "If your account was imported from Shopify, your default username is the email address used on your order and your default password is your Shopify order number. If you placed multiple orders, use the first order number. If you already registered a passkey, you can use it instead of your password.";
 }
 
 export function defaultPasskeySetupNote() {
-  return 'Admin accounts now require a passkey before the administration panel can be used.';
+  return "Admin accounts now require a passkey before the administration panel can be used.";
 }
 
 export function defaultPasswordGateNote() {
-  return 'Your temporary password must be replaced before you can use the portal.';
+  return "Your temporary password must be replaced before you can use the portal.";
 }
 
 export const portalView = reactive({
-  currentPage: 'dashboard' as 'dashboard' | 'docs' | 'onboarding' | 'faq' | 'identify',
+  currentPage: "dashboard" as
+    | "dashboard"
+    | "docs"
+    | "onboarding"
+    | "faq"
+    | "identify",
   advancedMode: false,
   authenticated: false,
   authNote: defaultAuthNote(),
-  loginEmail: '',
-  loginPassword: '',
-  loginFeedback: '',
+  loginEmail: "",
+  loginPassword: "",
+  loginFeedback: "",
   loginChallengeVisible: false,
-  loginChallengeNote: 'Complete the security check to continue signing in.',
+  loginChallengeNote: "Complete the security check to continue signing in.",
   showLogoutButton: false,
   showChangePasswordButton: false,
   passwordGateVisible: false,
   passwordGateRequiresCurrent: false,
   passwordGateNote: defaultPasswordGateNote(),
-  passwordCurrent: '',
-  passwordNew: '',
-  passwordConfirm: '',
+  passwordCurrent: "",
+  passwordNew: "",
+  passwordConfirm: "",
   passkeySetupVisible: false,
   passkeySetupNote: defaultPasskeySetupNote(),
   adminVisible: false,
-  adminCreateUserEmail: '',
-  adminCreateUserPassword: '',
-  adminCreateUserGroups: '',
-  adminCreateUserResult: '',
+  adminCreateUserEmail: "",
+  adminCreateUserPassword: "",
+  adminCreateUserGroups: "",
+  adminCreateUserResult: "",
   adminCreateUserDisabled: true,
-  adminCustomersNote: '',
+  adminCustomersNote: "",
   adminCustomers: [] as PortalAdminCustomerView[],
-  adminPackagesNote: '',
+  adminPackagesNote: "",
   adminPackages: [] as PortalAdminPackageView[],
   shopifySyncDisabled: true,
-  shopifySyncResult: '',
+  shopifySyncResult: "",
   reloadPackagesDisabled: true,
   reloadCustomersDisabled: true,
   reloadPasskeysDisabled: true,
@@ -182,23 +187,24 @@ export const portalView = reactive({
   hooksDisabled: true,
   hooksEnabled: false,
   abortOtaDisabled: true,
-  connectionLabel: 'Disconnected',
+  connectionLabel: "Disconnected",
   connectionOnline: false,
-  configNote: 'Connect to the device before editing persistent settings.',
+  configNote: "Connect to the device before editing persistent settings.",
   installPackages: [] as PortalInstallPackageView[],
-  packageNote: 'No packages loaded yet.',
-  progressLabel: 'No transfer started',
+  packageNote: "No packages loaded yet.",
+  progressLabel: "No transfer started",
   progressPercent: 0,
-  progressPercentText: '0%',
-  deviceName: 'Not connected',
-  firmwareVersion: '-',
-  canState: '-',
-  hooksState: '-',
-  profileState: '-',
-  speedOffsetState: '-',
-  fsdFlagState: '-',
-  otaState: 'Idle',
-  passkeyNote: 'Passkeys let you sign in without reusing a password. Admin accounts require at least one registered passkey.',
+  progressPercentText: "0%",
+  deviceName: "Not connected",
+  firmwareVersion: "-",
+  canState: "-",
+  hooksState: "-",
+  profileState: "-",
+  speedOffsetState: "-",
+  fsdFlagState: "-",
+  otaState: "Idle",
+  passkeyNote:
+    "Passkeys let you sign in without reusing a password. Admin accounts require at least one registered passkey.",
   passkeys: [] as PortalPasskeyView[],
-  eventLogText: '',
+  eventLogText: "",
 });

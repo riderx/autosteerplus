@@ -6,8 +6,8 @@ import {
   defaultPasskeySetupNote,
   defaultPasswordGateNote,
   portalView,
-} from './view-model';
-import { watch } from 'vue';
+} from "./view-model";
+import { watch } from "vue";
 const BLE_SERVICE_UUID = "74d9d2db-4d0a-4f23-9acb-5528df6b9800";
 const BLE_STATUS_UUID = "74d9d2db-4d0a-4f23-9acb-5528df6b9801";
 const BLE_CONFIG_UUID = "74d9d2db-4d0a-4f23-9acb-5528df6b9802";
@@ -82,11 +82,20 @@ const state = {
 };
 
 function readCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") ?? "";
+  return (
+    document
+      .querySelector('meta[name="csrf-token"]')
+      ?.getAttribute("content") ?? ""
+  );
 }
 
 function readTurnstileSiteKey() {
-  return document.querySelector('meta[name="turnstile-site-key"]')?.getAttribute("content")?.trim() ?? "";
+  return (
+    document
+      .querySelector('meta[name="turnstile-site-key"]')
+      ?.getAttribute("content")
+      ?.trim() ?? ""
+  );
 }
 
 function clearTurnstileRenderRetry() {
@@ -129,26 +138,49 @@ function userHasAdminRole(user = state.user) {
     return true;
   }
 
-  const roleValues = [user.role, user.userRole, user.accessRole, user.accountType, user.type]
-    .map((value) => String(value ?? "").trim().toLowerCase())
+  const roleValues = [
+    user.role,
+    user.userRole,
+    user.accessRole,
+    user.accountType,
+    user.type,
+  ]
+    .map((value) =>
+      String(value ?? "")
+        .trim()
+        .toLowerCase(),
+    )
     .filter(Boolean);
 
-  if (roleValues.some((value) => value === "admin" || value === "administrator")) {
+  if (
+    roleValues.some((value) => value === "admin" || value === "administrator")
+  ) {
     return true;
   }
 
-  const collections = [user.roles, user.permissions, user.groups, user.accessGroups];
-  return collections.some((collection) =>
-    Array.isArray(collection) &&
-    collection.some((value) => {
-      const normalized = String(value ?? "").trim().toLowerCase();
-      return normalized === "admin" || normalized === "administrator";
-    })
+  const collections = [
+    user.roles,
+    user.permissions,
+    user.groups,
+    user.accessGroups,
+  ];
+  return collections.some(
+    (collection) =>
+      Array.isArray(collection) &&
+      collection.some((value) => {
+        const normalized = String(value ?? "")
+          .trim()
+          .toLowerCase();
+        return normalized === "admin" || normalized === "administrator";
+      }),
   );
 }
 
 function hasAdminPanelAccess() {
-  return state.authenticated && (state.adminPasskeySetupRequired || userHasAdminRole());
+  return (
+    state.authenticated &&
+    (state.adminPasskeySetupRequired || userHasAdminRole())
+  );
 }
 
 function passkeySetupGateVisible() {
@@ -160,8 +192,15 @@ function interactionGateVisible() {
 }
 
 function resolveCurrentPageFromLocation() {
-  const hash = String(window.location.hash ?? "").trim().toLowerCase();
-  if (hash === "" || hash === "#/" || hash === DASHBOARD_HASH || hash === "#home") {
+  const hash = String(window.location.hash ?? "")
+    .trim()
+    .toLowerCase();
+  if (
+    hash === "" ||
+    hash === "#/" ||
+    hash === DASHBOARD_HASH ||
+    hash === "#home"
+  ) {
     return "dashboard";
   }
 
@@ -200,9 +239,15 @@ function updateDocumentTitle() {
 }
 
 function syncPageFromLocation() {
-  const currentHash = String(window.location.hash ?? "").trim().toLowerCase();
+  const currentHash = String(window.location.hash ?? "")
+    .trim()
+    .toLowerCase();
   if (currentHash === "" || currentHash === "#/" || currentHash === "#home") {
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${DASHBOARD_HASH}`);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}${DASHBOARD_HASH}`,
+    );
   }
 
   portalView.currentPage = resolveCurrentPageFromLocation();
@@ -210,13 +255,14 @@ function syncPageFromLocation() {
 }
 
 function navigateToPage(page) {
-  const nextHash = page === "docs"
-    ? DOCS_HASH
-    : page === "onboarding"
-      ? ONBOARDING_HASH
-      : page === "faq"
-        ? FAQ_HASH
-        : DASHBOARD_HASH;
+  const nextHash =
+    page === "docs"
+      ? DOCS_HASH
+      : page === "onboarding"
+        ? ONBOARDING_HASH
+        : page === "faq"
+          ? FAQ_HASH
+          : DASHBOARD_HASH;
   if (window.location.hash !== nextHash) {
     window.location.hash = nextHash;
     return;
@@ -237,7 +283,10 @@ function setAdvancedMode(enabled) {
   portalView.advancedMode = Boolean(enabled);
 
   try {
-    window.localStorage.setItem(ADVANCED_MODE_STORAGE_KEY, portalView.advancedMode ? "1" : "0");
+    window.localStorage.setItem(
+      ADVANCED_MODE_STORAGE_KEY,
+      portalView.advancedMode ? "1" : "0",
+    );
   } catch {
     // Ignore storage failures and keep the in-memory state.
   }
@@ -250,9 +299,12 @@ function updatePortalControls() {
   portalView.connectDisabled = blockedByInteraction || state.connected;
   portalView.disconnectDisabled = !state.connected || passwordGateVisible();
   portalView.refreshDisabled = !state.connected || passwordGateVisible();
-  portalView.rebootDisabled = !state.connected || state.updating || passwordGateVisible();
-  portalView.hooksDisabled = !state.connected || state.updating || passwordGateVisible();
-  portalView.abortOtaDisabled = !state.connected || !state.updating || passwordGateVisible();
+  portalView.rebootDisabled =
+    !state.connected || state.updating || passwordGateVisible();
+  portalView.hooksDisabled =
+    !state.connected || state.updating || passwordGateVisible();
+  portalView.abortOtaDisabled =
+    !state.connected || !state.updating || passwordGateVisible();
   portalView.connectionLabel = state.connected ? "Connected" : "Disconnected";
   portalView.connectionOnline = state.connected;
   portalView.configNote = state.connected
@@ -260,8 +312,12 @@ function updatePortalControls() {
     : "Connect to the device before editing persistent settings.";
   portalView.shopifySyncDisabled = !isAdmin || state.syncingCustomers;
   portalView.reloadPackagesDisabled = !isAdmin || packageActionInProgress();
-  portalView.reloadCustomersDisabled = !isAdmin || state.loadingCustomers || customerActionInProgress();
-  portalView.reloadPasskeysDisabled = !state.authenticated || state.loadingPasskeys || state.deletingPasskeyId !== 0;
+  portalView.reloadCustomersDisabled =
+    !isAdmin || state.loadingCustomers || customerActionInProgress();
+  portalView.reloadPasskeysDisabled =
+    !state.authenticated ||
+    state.loadingPasskeys ||
+    state.deletingPasskeyId !== 0;
   portalView.registerPasskeyDisabled = !state.authenticated;
   portalView.adminRegisterPasskeyDisabled = !state.authenticated;
 }
@@ -307,8 +363,11 @@ function setLoginFeedback(message = "") {
 }
 
 function base64UrlToUint8Array(value) {
-  const normalized = String(value ?? "").replace(/-/g, "+").replace(/_/g, "/");
-  const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
+  const normalized = String(value ?? "")
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const padding =
+    normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
   const raw = window.atob(normalized + padding);
   const bytes = new Uint8Array(raw.length);
   for (let index = 0; index < raw.length; index += 1) {
@@ -322,7 +381,11 @@ function uint8ArrayToBase64Url(bytes) {
   for (const byte of bytes) {
     value += String.fromCharCode(byte);
   }
-  return window.btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return window
+    .btoa(value)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
 function ensureTurnstileRendered() {
@@ -340,23 +403,29 @@ function ensureTurnstileRendered() {
   }
 
   try {
-    state.turnstileWidgetId = window.turnstile.render(dom.loginChallengeWidget, {
-      sitekey: readTurnstileSiteKey(),
-      callback: (token) => {
-        state.turnstileToken = token;
-        portalView.loginChallengeNote = "Complete the security check to continue signing in.";
+    state.turnstileWidgetId = window.turnstile.render(
+      dom.loginChallengeWidget,
+      {
+        sitekey: readTurnstileSiteKey(),
+        callback: (token) => {
+          state.turnstileToken = token;
+          portalView.loginChallengeNote =
+            "Complete the security check to continue signing in.";
+        },
+        "expired-callback": () => {
+          state.turnstileToken = "";
+        },
+        "error-callback": () => {
+          state.turnstileToken = "";
+          portalView.loginChallengeNote =
+            "The security check failed to load. Reload the page and try again.";
+        },
       },
-      "expired-callback": () => {
-        state.turnstileToken = "";
-      },
-      "error-callback": () => {
-        state.turnstileToken = "";
-        portalView.loginChallengeNote = "The security check failed to load. Reload the page and try again.";
-      },
-    });
+    );
     clearTurnstileRenderRetry();
     state.turnstileRenderRetryCount = 0;
-    portalView.loginChallengeNote = "Complete the security check to continue signing in.";
+    portalView.loginChallengeNote =
+      "Complete the security check to continue signing in.";
   } catch (error) {
     portalView.loginChallengeNote = "Loading the security check...";
     scheduleTurnstileRenderRetry();
@@ -367,7 +436,10 @@ function resetTurnstile() {
   clearTurnstileRenderRetry();
   state.turnstileRenderRetryCount = 0;
   state.turnstileToken = "";
-  if (state.turnstileWidgetId && typeof window.turnstile?.reset === "function") {
+  if (
+    state.turnstileWidgetId &&
+    typeof window.turnstile?.reset === "function"
+  ) {
     window.turnstile.reset(state.turnstileWidgetId);
   }
 }
@@ -375,7 +447,8 @@ function resetTurnstile() {
 function log(message, level = "info") {
   const stamp = new Date().toLocaleTimeString();
   const prefix = level === "error" ? "ERR" : level === "warn" ? "WRN" : "INF";
-  portalView.eventLogText = `[${stamp}] ${prefix} ${message}\n${portalView.eventLogText}`.trim();
+  portalView.eventLogText =
+    `[${stamp}] ${prefix} ${message}\n${portalView.eventLogText}`.trim();
 }
 
 function customerActionInProgress() {
@@ -388,7 +461,11 @@ function customerActionInProgress() {
 }
 
 function packageActionInProgress() {
-  return Boolean(state.deletingPackageId) || Boolean(state.savingPackageGroupsId) || state.updating;
+  return (
+    Boolean(state.deletingPackageId) ||
+    Boolean(state.savingPackageGroupsId) ||
+    state.updating
+  );
 }
 
 function accessGroupsInputValue(groups) {
@@ -396,11 +473,16 @@ function accessGroupsInputValue(groups) {
 }
 
 function accessGroupsSummary(groups, emptyLabel) {
-  return Array.isArray(groups) && groups.length > 0 ? groups.join(", ") : emptyLabel;
+  return Array.isArray(groups) && groups.length > 0
+    ? groups.join(", ")
+    : emptyLabel;
 }
 
 function passwordGateVisible() {
-  return state.authenticated && (state.mustChangePassword || state.passwordDialogOpen);
+  return (
+    state.authenticated &&
+    (state.mustChangePassword || state.passwordDialogOpen)
+  );
 }
 
 function passwordGateRequiresCurrentPassword() {
@@ -409,7 +491,9 @@ function passwordGateRequiresCurrentPassword() {
 
 function passwordValidationMessage(password, email = "") {
   const value = String(password ?? "");
-  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+  const normalizedEmail = String(email ?? "")
+    .trim()
+    .toLowerCase();
 
   if (value.length === 0) {
     return `Use at least ${PASSWORD_MIN_LENGTH} characters. A passphrase with several unrelated words is fine.`;
@@ -439,10 +523,14 @@ function updatePasswordGateValidation() {
   const currentPassword = portalView.passwordCurrent;
   const password = portalView.passwordNew;
   const confirmPassword = portalView.passwordConfirm;
-  const validationMessage = passwordValidationMessage(password, state.user?.email ?? "");
+  const validationMessage = passwordValidationMessage(
+    password,
+    state.user?.email ?? "",
+  );
 
   if (passwordGateRequiresCurrentPassword() && currentPassword.length === 0) {
-    portalView.passwordGateNote = "Enter your current password, then choose a new password with at least 15 characters.";
+    portalView.passwordGateNote =
+      "Enter your current password, then choose a new password with at least 15 characters.";
     return false;
   }
 
@@ -486,7 +574,10 @@ function closePasswordDialog() {
 
 function deviceRequiresSecureOta(status = state.lastStatus) {
   return Boolean(
-    status?.otaSecureMode || status?.otaMetadataRequired || status?.otaMetadataLoaded || status?.otaEncryptedRequired
+    status?.otaSecureMode ||
+    status?.otaMetadataRequired ||
+    status?.otaMetadataLoaded ||
+    status?.otaEncryptedRequired,
   );
 }
 
@@ -500,7 +591,9 @@ function visiblePackagesForCurrentDevice() {
   }
 
   const secureDevice = deviceRequiresSecureOta();
-  return state.packages.filter((pkg) => (secureDevice ? pkg.secureOta : !pkg.secureOta));
+  return state.packages.filter((pkg) =>
+    secureDevice ? pkg.secureOta : !pkg.secureOta,
+  );
 }
 
 function formatBytes(byteCount) {
@@ -543,22 +636,26 @@ function renderPackages() {
   }
 
   if (state.mustChangePassword) {
-    portalView.packageNote = "Update your temporary password before using device controls or installing firmware.";
+    portalView.packageNote =
+      "Update your temporary password before using device controls or installing firmware.";
     return;
   }
 
   if (state.adminPasskeySetupRequired) {
-    portalView.packageNote = "Register your admin passkey before using device controls or installing firmware.";
+    portalView.packageNote =
+      "Register your admin passkey before using device controls or installing firmware.";
     return;
   }
 
   if (!state.connected) {
-    portalView.packageNote = "Connect to your device to load compatible firmware packages.";
+    portalView.packageNote =
+      "Connect to your device to load compatible firmware packages.";
     return;
   }
 
   if (state.packages.length === 0) {
-    portalView.packageNote = "No firmware packages are available for this account right now.";
+    portalView.packageNote =
+      "No firmware packages are available for this account right now.";
     return;
   }
 
@@ -574,7 +671,8 @@ function renderPackages() {
     return;
   }
 
-  portalView.packageNote = "Showing firmware packages compatible with the connected device.";
+  portalView.packageNote =
+    "Showing firmware packages compatible with the connected device.";
   portalView.installPackages = visiblePackages.map((pkg) => ({
     id: pkg.id,
     label: pkg.label,
@@ -592,7 +690,8 @@ function renderAdminPackages() {
   }
 
   if (state.packages.length === 0) {
-    portalView.adminPackagesNote = "No firmware packages are currently imported.";
+    portalView.adminPackagesNote =
+      "No firmware packages are currently imported.";
     portalView.adminPackages = [];
     return;
   }
@@ -600,13 +699,17 @@ function renderAdminPackages() {
   const totalPackages = state.packages.length;
   const securePackages = state.packages.filter((pkg) => pkg.secureOta).length;
   const bootstrapPackages = totalPackages - securePackages;
-  const restrictedPackages = state.packages.filter((pkg) => Array.isArray(pkg.accessGroups) && pkg.accessGroups.length > 0).length;
+  const restrictedPackages = state.packages.filter(
+    (pkg) => Array.isArray(pkg.accessGroups) && pkg.accessGroups.length > 0,
+  ).length;
   portalView.adminPackagesNote =
     `${totalPackages} package${totalPackages === 1 ? "" : "s"} loaded. ` +
-      `${securePackages} secure, ${bootstrapPackages} bootstrap, ${restrictedPackages} restricted by group.`;
+    `${securePackages} secure, ${bootstrapPackages} bootstrap, ${restrictedPackages} restricted by group.`;
 
   portalView.adminPackages = state.packages.map((pkg) => {
-    const currentView = portalView.adminPackages.find((entry) => entry.id === pkg.id);
+    const currentView = portalView.adminPackages.find(
+      (entry) => entry.id === pkg.id,
+    );
     const savingGroups = state.savingPackageGroupsId === pkg.id;
     return {
       id: pkg.id,
@@ -614,10 +717,13 @@ function renderAdminPackages() {
       primaryMeta: `${pkg.id} • ${pkg.firmwareVersion} • ${pkg.secureOta ? "Secure OTA" : "Bootstrap OTA"}`,
       secondaryMeta: `${formatBytes(pkg.size)} • Added ${formatTimestamp(pkg.createdAt)}`,
       audienceMeta: `Access groups: ${accessGroupsSummary(pkg.accessGroups, "All customers")}`,
-      accessGroupsInput: currentView?.accessGroupsInput ?? accessGroupsInputValue(pkg.accessGroups),
+      accessGroupsInput:
+        currentView?.accessGroupsInput ??
+        accessGroupsInputValue(pkg.accessGroups),
       saveGroupsLabel: savingGroups ? "Saving..." : "Save Groups",
       saveGroupsDisabled: packageActionInProgress(),
-      deleteLabel: state.deletingPackageId === pkg.id ? "Deleting..." : "Delete",
+      deleteLabel:
+        state.deletingPackageId === pkg.id ? "Deleting..." : "Delete",
       deleteDisabled: packageActionInProgress(),
     };
   });
@@ -638,14 +744,14 @@ function customerStatusLabel(customer) {
   }
 }
 
-function customerStatusClass(customer) {
+function customerStatusTone(customer) {
   switch (customer.accessState) {
     case "locked":
-      return "status-chip-locked";
+      return "locked";
     case "disabled":
-      return "status-chip-disabled";
+      return "disabled";
     default:
-      return "status-chip-active";
+      return "active";
   }
 }
 
@@ -665,23 +771,34 @@ function renderAdminUsers() {
   }
 
   if (state.customers.length === 0) {
-    portalView.adminCustomersNote = "No customer accounts are currently provisioned.";
+    portalView.adminCustomersNote =
+      "No customer accounts are currently provisioned.";
     portalView.adminCustomers = [];
     return;
   }
 
-  const activeCount = state.customers.filter((customer) => customer.accessState === "active").length;
-  const lockedCount = state.customers.filter((customer) => customer.accessState === "locked").length;
-  const disabledCount = state.customers.filter((customer) => customer.accessState === "disabled").length;
+  const activeCount = state.customers.filter(
+    (customer) => customer.accessState === "active",
+  ).length;
+  const lockedCount = state.customers.filter(
+    (customer) => customer.accessState === "locked",
+  ).length;
+  const disabledCount = state.customers.filter(
+    (customer) => customer.accessState === "disabled",
+  ).length;
   portalView.adminCustomersNote =
     `${state.customers.length} customer account${state.customers.length === 1 ? "" : "s"} loaded. ` +
-      `${activeCount} active, ${lockedCount} locked, ${disabledCount} disabled.`;
+    `${activeCount} active, ${lockedCount} locked, ${disabledCount} disabled.`;
 
   portalView.adminCustomers = state.customers.map((customer) => {
-    const currentView = portalView.adminCustomers.find((entry) => entry.id === customer.id);
+    const currentView = portalView.adminCustomers.find(
+      (entry) => entry.id === customer.id,
+    );
     const detailParts = [];
     const enabling = customer.accessState !== "active";
-    detailParts.push(`Access groups: ${accessGroupsSummary(customer.accessGroups, "None")}`);
+    detailParts.push(
+      `Access groups: ${accessGroupsSummary(customer.accessGroups, "None")}`,
+    );
     if (customer.mustChangePassword) {
       detailParts.push("Password change required");
     }
@@ -693,23 +810,39 @@ function renderAdminUsers() {
     } else if (customer.createdAt) {
       detailParts.push(`Created ${formatTimestamp(customer.createdAt)}`);
     }
-    const orderLabel = customer.sourceOrderNumber ? ` • Order ${customer.sourceOrderNumber}` : "";
+    const orderLabel = customer.sourceOrderNumber
+      ? ` • Order ${customer.sourceOrderNumber}`
+      : "";
     return {
       id: customer.id,
       email: customer.email,
       statusLabel: customerStatusLabel(customer),
-      statusClass: customerStatusClass(customer),
+      statusTone: customerStatusTone(customer),
       primaryMeta: `${customerSourceLabel(customer)}${orderLabel}`,
-      secondaryMeta: detailParts.length > 0 ? detailParts.join(" • ") : "No Shopify order metadata",
-      accessGroupsInput: currentView?.accessGroupsInput ?? accessGroupsInputValue(customer.accessGroups),
-      saveGroupsLabel: state.savingCustomerGroupsId === customer.id ? "Saving..." : "Save Groups",
+      secondaryMeta:
+        detailParts.length > 0
+          ? detailParts.join(" • ")
+          : "No Shopify order metadata",
+      accessGroupsInput:
+        currentView?.accessGroupsInput ??
+        accessGroupsInputValue(customer.accessGroups),
+      saveGroupsLabel:
+        state.savingCustomerGroupsId === customer.id
+          ? "Saving..."
+          : "Save Groups",
       saveGroupsDisabled: customerActionInProgress(),
-      toggleLabel: state.updatingCustomerId === customer.id
-        ? (enabling ? "Enabling..." : "Disabling...")
-        : (enabling ? "Enable" : "Disable"),
-      toggleClass: enabling ? "button button-secondary" : "button button-danger",
+      toggleLabel:
+        state.updatingCustomerId === customer.id
+          ? enabling
+            ? "Enabling..."
+            : "Disabling..."
+          : enabling
+            ? "Enable"
+            : "Disable",
+      toggleVariant: enabling ? "secondary" : "danger",
       toggleDisabled: customerActionInProgress(),
-      deleteLabel: state.deletingCustomerId === customer.id ? "Deleting..." : "Delete",
+      deleteLabel:
+        state.deletingCustomerId === customer.id ? "Deleting..." : "Delete",
       deleteDisabled: customerActionInProgress(),
     };
   });
@@ -730,27 +863,27 @@ function renderPasskeys() {
   }
 
   if (state.passkeys.length === 0) {
-    portalView.passkeyNote =
-      state.adminPasskeySetupRequired
-        ? "Register your first admin passkey to continue."
-        : "No passkeys are registered on this account yet.";
+    portalView.passkeyNote = state.adminPasskeySetupRequired
+      ? "Register your first admin passkey to continue."
+      : "No passkeys are registered on this account yet.";
     portalView.passkeys = [];
     return;
   }
 
-  portalView.passkeyNote =
-    `${state.passkeys.length} passkey${state.passkeys.length === 1 ? "" : "s"} registered on this account.`;
+  portalView.passkeyNote = `${state.passkeys.length} passkey${state.passkeys.length === 1 ? "" : "s"} registered on this account.`;
 
   portalView.passkeys = state.passkeys.map((passkey) => ({
     id: passkey.id,
     title: passkey.label || "Passkey",
-    primaryMeta: passkey.transports?.length > 0
-      ? passkey.transports.join(" • ")
-      : "Platform or roaming authenticator",
+    primaryMeta:
+      passkey.transports?.length > 0
+        ? passkey.transports.join(" • ")
+        : "Platform or roaming authenticator",
     secondaryMeta: passkey.lastUsedAt
       ? `Last used ${formatTimestamp(passkey.lastUsedAt)}`
       : `Registered ${formatTimestamp(passkey.createdAt)}`,
-    deleteLabel: state.deletingPasskeyId === passkey.id ? "Removing..." : "Remove",
+    deleteLabel:
+      state.deletingPasskeyId === passkey.id ? "Removing..." : "Remove",
     deleteDisabled: state.deletingPasskeyId !== 0,
   }));
 }
@@ -811,11 +944,14 @@ function updateStatusUi(status) {
     return;
   }
 
-  const previousSecureMode = state.lastStatus === null ? null : deviceRequiresSecureOta();
+  const previousSecureMode =
+    state.lastStatus === null ? null : deviceRequiresSecureOta();
   state.lastStatus = status;
   portalView.deviceName = status.deviceName ?? "Unknown";
   portalView.firmwareVersion = status.firmwareVersion ?? "-";
-  portalView.canState = status.canOnline ? `Online • ${status.canRxAgeMs ?? 0} ms ago` : "No recent frames";
+  portalView.canState = status.canOnline
+    ? `Online • ${status.canRxAgeMs ?? 0} ms ago`
+    : "No recent frames";
   portalView.hooksState = status.canHooksEnabled ? "Enabled" : "Disabled";
   portalView.profileState = status.profile ?? "-";
   portalView.speedOffsetState = `${status.speedOffsetPercent ?? 0}%`;
@@ -829,7 +965,9 @@ function updateStatusUi(status) {
   }
 
   if (status.otaSecureMode) {
-    otaState += status.otaMetadataLoaded ? " • secure metadata ready" : " • secure OTA";
+    otaState += status.otaMetadataLoaded
+      ? " • secure metadata ready"
+      : " • secure OTA";
   }
 
   portalView.otaState = otaState;
@@ -878,7 +1016,9 @@ async function apiFetch(path, options = {}) {
   if (requireCsrf) {
     const csrfToken = readCsrfToken();
     if (!csrfToken) {
-      throw new Error("CSRF token is unavailable. Reload the page and try again.");
+      throw new Error(
+        "CSRF token is unavailable. Reload the page and try again.",
+      );
     }
     requestHeaders.set("X-CSRF-Token", csrfToken);
   }
@@ -906,7 +1046,11 @@ async function apiJson(path, options = {}) {
     return JSON.parse(text);
   } catch {
     const snippet = text.trim().replace(/\s+/g, " ").slice(0, 240);
-    throw new Error(snippet ? `Server returned invalid JSON: ${snippet}` : "Server returned invalid JSON");
+    throw new Error(
+      snippet
+        ? `Server returned invalid JSON: ${snippet}`
+        : "Server returned invalid JSON",
+    );
   }
 }
 
@@ -916,14 +1060,17 @@ async function loadSession() {
   state.user = session.user ?? null;
   state.mustChangePassword = Boolean(session.mustChangePassword);
   state.adminPasskeySetupRequired = Boolean(session.adminPasskeySetupRequired);
-  state.turnstileConfigured = Boolean(session.turnstileConfigured || readTurnstileSiteKey());
+  state.turnstileConfigured = Boolean(
+    session.turnstileConfigured || readTurnstileSiteKey(),
+  );
   state.loginChallengeRequired = false;
   state.passwordDialogOpen = false;
   portalView.passkeySetupNote = defaultPasskeySetupNote();
   updateAuthUi();
 
   if (!session.hasUsers) {
-    portalView.authNote = "Access is not available at the moment. Please contact support.";
+    portalView.authNote =
+      "Access is not available at the moment. Please contact support.";
   } else {
     portalView.authNote = defaultAuthNote();
   }
@@ -954,7 +1101,8 @@ function updateLoginChallengeUi() {
   const visible = state.turnstileConfigured && state.loginChallengeRequired;
   portalView.loginChallengeVisible = visible;
   if (visible) {
-    portalView.loginChallengeNote = "Complete the security check to continue signing in.";
+    portalView.loginChallengeNote =
+      "Complete the security check to continue signing in.";
     ensureTurnstileRendered();
     return;
   }
@@ -988,7 +1136,9 @@ async function login(email, password) {
   updateLoginChallengeUi();
 
   if (!response.ok) {
-    const error = new Error(payload.message || payload.error || `HTTP ${response.status}`);
+    const error = new Error(
+      payload.message || payload.error || `HTTP ${response.status}`,
+    );
     error.payload = payload;
     error.status = response.status;
     throw error;
@@ -1076,21 +1226,31 @@ function serializePublicKeyCredential(credential) {
     id: credential.id,
     type: credential.type,
     response: {
-      clientDataJSON: uint8ArrayToBase64Url(new Uint8Array(response.clientDataJSON)),
+      clientDataJSON: uint8ArrayToBase64Url(
+        new Uint8Array(response.clientDataJSON),
+      ),
     },
   };
 
   if (response.attestationObject) {
-    payload.response.attestationObject = uint8ArrayToBase64Url(new Uint8Array(response.attestationObject));
+    payload.response.attestationObject = uint8ArrayToBase64Url(
+      new Uint8Array(response.attestationObject),
+    );
   }
   if (response.authenticatorData) {
-    payload.response.authenticatorData = uint8ArrayToBase64Url(new Uint8Array(response.authenticatorData));
+    payload.response.authenticatorData = uint8ArrayToBase64Url(
+      new Uint8Array(response.authenticatorData),
+    );
   }
   if (response.signature) {
-    payload.response.signature = uint8ArrayToBase64Url(new Uint8Array(response.signature));
+    payload.response.signature = uint8ArrayToBase64Url(
+      new Uint8Array(response.signature),
+    );
   }
   if (response.userHandle) {
-    payload.response.userHandle = uint8ArrayToBase64Url(new Uint8Array(response.userHandle));
+    payload.response.userHandle = uint8ArrayToBase64Url(
+      new Uint8Array(response.userHandle),
+    );
   }
   if (typeof response.getTransports === "function") {
     payload.response.transports = response.getTransports();
@@ -1112,7 +1272,9 @@ async function loadPasskeys() {
   try {
     const payload = await apiJson("./api/passkeys.php");
     state.passkeys = Array.isArray(payload.passkeys) ? payload.passkeys : [];
-    state.adminPasskeySetupRequired = Boolean(payload.adminPasskeySetupRequired);
+    state.adminPasskeySetupRequired = Boolean(
+      payload.adminPasskeySetupRequired,
+    );
     return payload;
   } finally {
     state.loadingPasskeys = false;
@@ -1144,7 +1306,9 @@ async function registerPasskey() {
     method: "POST",
     body: JSON.stringify({
       ...serializePublicKeyCredential(credential),
-      label: window.navigator.platform ? `${window.navigator.platform} Passkey` : "Passkey",
+      label: window.navigator.platform
+        ? `${window.navigator.platform} Passkey`
+        : "Passkey",
     }),
     headers: { "Content-Type": "application/json" },
     requireCsrf: true,
@@ -1194,7 +1358,9 @@ async function signInWithPasskey(email = "", promptedByLogin = false) {
 
   const optionsPayload = await apiJson("./api/passkey-auth-options.php", {
     method: "POST",
-    body: JSON.stringify(normalizedEmail === "" ? {} : { email: normalizedEmail }),
+    body: JSON.stringify(
+      normalizedEmail === "" ? {} : { email: normalizedEmail },
+    ),
     headers: { "Content-Type": "application/json" },
     requireCsrf: true,
   });
@@ -1266,10 +1432,13 @@ async function syncShopifyCustomers() {
 
     const details = Array.isArray(payload.details)
       ? payload.details.slice(0, 40).map((detail) => {
-          const orderNumber = detail.orderNumber ? `order ${detail.orderNumber}` : "no order";
-          const criteria = Array.isArray(detail.criteria) && detail.criteria.length > 0
-            ? ` • ${detail.criteria.join(", ")}`
-            : "";
+          const orderNumber = detail.orderNumber
+            ? `order ${detail.orderNumber}`
+            : "no order";
+          const criteria =
+            Array.isArray(detail.criteria) && detail.criteria.length > 0
+              ? ` • ${detail.criteria.join(", ")}`
+              : "";
           return `${detail.status}: ${detail.email ?? ""} • ${orderNumber}${criteria}`.trim();
         })
       : [];
@@ -1294,7 +1463,7 @@ async function setCustomerActive(customer, isActive) {
 
   const confirmed = window.confirm(
     `${isActive ? "Enable" : "Disable"} customer account "${customer.email}"?\n\n` +
-      `${isActive ? "This will allow the customer to sign in again." : "This will block sign-in and keep the account excluded from Shopify re-imports."}`
+      `${isActive ? "This will allow the customer to sign in again." : "This will block sign-in and keep the account excluded from Shopify re-imports."}`,
   );
   if (!confirmed) {
     return;
@@ -1313,10 +1482,14 @@ async function setCustomerActive(customer, isActive) {
 
     const updatedCustomer = payload.user ?? null;
     if (updatedCustomer && typeof updatedCustomer.id === "number") {
-      state.customers = state.customers.map((entry) => (entry.id === updatedCustomer.id ? updatedCustomer : entry));
+      state.customers = state.customers.map((entry) =>
+        entry.id === updatedCustomer.id ? updatedCustomer : entry,
+      );
     }
 
-    log(`${isActive ? "Enabled" : "Disabled"} customer account ${customer.email}`);
+    log(
+      `${isActive ? "Enabled" : "Disabled"} customer account ${customer.email}`,
+    );
   } finally {
     state.updatingCustomerId = 0;
     renderAdminUsers();
@@ -1341,11 +1514,13 @@ async function saveCustomerGroups(customer, accessGroups) {
 
     const updatedCustomer = payload.user ?? null;
     if (updatedCustomer && typeof updatedCustomer.id === "number") {
-      state.customers = state.customers.map((entry) => (entry.id === updatedCustomer.id ? updatedCustomer : entry));
+      state.customers = state.customers.map((entry) =>
+        entry.id === updatedCustomer.id ? updatedCustomer : entry,
+      );
     }
 
     log(
-      `Saved access groups for ${customer.email}: ${accessGroupsSummary(updatedCustomer?.accessGroups, "none")}`
+      `Saved access groups for ${customer.email}: ${accessGroupsSummary(updatedCustomer?.accessGroups, "none")}`,
     );
     return payload;
   } finally {
@@ -1373,8 +1548,13 @@ async function createCustomer(email, password, accessGroups) {
 
     const createdCustomer = payload.user ?? null;
     if (createdCustomer && typeof createdCustomer.id === "number") {
-      state.customers = [createdCustomer, ...state.customers].sort((left, right) =>
-        String(left.email ?? "").localeCompare(String(right.email ?? ""), undefined, { sensitivity: "base" })
+      state.customers = [createdCustomer, ...state.customers].sort(
+        (left, right) =>
+          String(left.email ?? "").localeCompare(
+            String(right.email ?? ""),
+            undefined,
+            { sensitivity: "base" },
+          ),
       );
     }
 
@@ -1402,7 +1582,7 @@ async function deleteCustomer(customer) {
   }
 
   const confirmed = window.confirm(
-    `Delete customer account "${customer.email}"?\n\nThis removes the account completely. Eligible Shopify customers can be recreated by a future refresh.`
+    `Delete customer account "${customer.email}"?\n\nThis removes the account completely. Eligible Shopify customers can be recreated by a future refresh.`,
   );
   if (!confirmed) {
     return;
@@ -1419,7 +1599,9 @@ async function deleteCustomer(customer) {
       requireCsrf: true,
     });
 
-    state.customers = state.customers.filter((entry) => entry.id !== customer.id);
+    state.customers = state.customers.filter(
+      (entry) => entry.id !== customer.id,
+    );
     log(`Deleted customer account ${customer.email}`);
   } finally {
     state.deletingCustomerId = 0;
@@ -1445,10 +1627,14 @@ async function savePackageGroups(pkg, accessGroups) {
 
     const updatedPackage = payload.package ?? null;
     if (updatedPackage && typeof updatedPackage.id === "string") {
-      state.packages = state.packages.map((entry) => (entry.id === updatedPackage.id ? updatedPackage : entry));
+      state.packages = state.packages.map((entry) =>
+        entry.id === updatedPackage.id ? updatedPackage : entry,
+      );
     }
 
-    log(`Saved package groups for ${pkg.label}: ${accessGroupsSummary(updatedPackage?.accessGroups, "all-customers")}`);
+    log(
+      `Saved package groups for ${pkg.label}: ${accessGroupsSummary(updatedPackage?.accessGroups, "all-customers")}`,
+    );
     return payload;
   } finally {
     state.savingPackageGroupsId = "";
@@ -1482,7 +1668,7 @@ async function deletePackage(pkg) {
   }
 
   const confirmed = window.confirm(
-    `Delete firmware package "${pkg.label}"?\n\nThis removes it from the OTA portal.`
+    `Delete firmware package "${pkg.label}"?\n\nThis removes it from the OTA portal.`,
   );
   if (!confirmed) {
     return;
@@ -1525,7 +1711,9 @@ function handleCommandValue(value) {
   for (const waiter of [...state.commandWaiters]) {
     if (waiter.matcher(value)) {
       clearTimeout(waiter.timeoutId);
-      state.commandWaiters = state.commandWaiters.filter((item) => item !== waiter);
+      state.commandWaiters = state.commandWaiters.filter(
+        (item) => item !== waiter,
+      );
       waiter.resolve(value);
     }
   }
@@ -1534,7 +1722,9 @@ function handleCommandValue(value) {
 async function waitForCommand(matcher, timeoutMs = 6000) {
   return new Promise((resolve, reject) => {
     const timeoutId = window.setTimeout(() => {
-      state.commandWaiters = state.commandWaiters.filter((item) => item.timeoutId !== timeoutId);
+      state.commandWaiters = state.commandWaiters.filter(
+        (item) => item.timeoutId !== timeoutId,
+      );
       reject(new Error("Timed out waiting for device response"));
     }, timeoutMs);
 
@@ -1555,14 +1745,24 @@ async function readTextCharacteristic(characteristic) {
   return decoder.decode(value);
 }
 
-async function writeTextCharacteristic(characteristic, text, withoutResponse = false) {
+async function writeTextCharacteristic(
+  characteristic,
+  text,
+  withoutResponse = false,
+) {
   const payload = encoder.encode(text);
-  if (withoutResponse && typeof characteristic.writeValueWithoutResponse === "function") {
+  if (
+    withoutResponse &&
+    typeof characteristic.writeValueWithoutResponse === "function"
+  ) {
     await characteristic.writeValueWithoutResponse(payload);
     return;
   }
 
-  if (!withoutResponse && typeof characteristic.writeValueWithResponse === "function") {
+  if (
+    !withoutResponse &&
+    typeof characteristic.writeValueWithResponse === "function"
+  ) {
     await characteristic.writeValueWithResponse(payload);
     return;
   }
@@ -1570,13 +1770,23 @@ async function writeTextCharacteristic(characteristic, text, withoutResponse = f
   await characteristic.writeValue(payload);
 }
 
-async function writeBinaryCharacteristic(characteristic, bytes, requireResponse = false) {
-  if (requireResponse && typeof characteristic.writeValueWithResponse === "function") {
+async function writeBinaryCharacteristic(
+  characteristic,
+  bytes,
+  requireResponse = false,
+) {
+  if (
+    requireResponse &&
+    typeof characteristic.writeValueWithResponse === "function"
+  ) {
     await characteristic.writeValueWithResponse(bytes);
     return;
   }
 
-  if (!requireResponse && typeof characteristic.writeValueWithoutResponse === "function") {
+  if (
+    !requireResponse &&
+    typeof characteristic.writeValueWithoutResponse === "function"
+  ) {
     await characteristic.writeValueWithoutResponse(bytes);
     return;
   }
@@ -1708,7 +1918,7 @@ async function connect() {
 
   if (!navigator.bluetooth) {
     throw new Error(
-      "Web Bluetooth is not available in this browser. Use the autosteerplus app, or on iPhone and iPad open the web fork with Bluefy: https://apps.apple.com/app/id1492822055"
+      "Web Bluetooth is not available in this browser. Use the autosteerplus app, or on iPhone and iPad open the web fork with Bluefy: https://apps.apple.com/app/id1492822055",
     );
   }
 
@@ -1727,10 +1937,14 @@ async function connect() {
 
   // Android BLE stacks are prone to GATT failures when multiple characteristic
   // lookups are started at the same time, so resolve them one-by-one.
-  const statusCharacteristic = await state.service.getCharacteristic(BLE_STATUS_UUID);
-  const configCharacteristic = await state.service.getCharacteristic(BLE_CONFIG_UUID);
-  const commandCharacteristic = await state.service.getCharacteristic(BLE_COMMAND_UUID);
-  const otaDataCharacteristic = await state.service.getCharacteristic(BLE_OTA_DATA_UUID);
+  const statusCharacteristic =
+    await state.service.getCharacteristic(BLE_STATUS_UUID);
+  const configCharacteristic =
+    await state.service.getCharacteristic(BLE_CONFIG_UUID);
+  const commandCharacteristic =
+    await state.service.getCharacteristic(BLE_COMMAND_UUID);
+  const otaDataCharacteristic =
+    await state.service.getCharacteristic(BLE_OTA_DATA_UUID);
 
   state.statusCharacteristic = statusCharacteristic;
   state.configCharacteristic = configCharacteristic;
@@ -1738,32 +1952,41 @@ async function connect() {
   state.otaDataCharacteristic = otaDataCharacteristic;
 
   await state.commandCharacteristic.startNotifications();
-  state.commandCharacteristic.addEventListener("characteristicvaluechanged", (event) => {
-    const response = decoder.decode(event.target.value);
-    log(`Device: ${response}`);
-    handleCommandValue(response);
-  });
+  state.commandCharacteristic.addEventListener(
+    "characteristicvaluechanged",
+    (event) => {
+      const response = decoder.decode(event.target.value);
+      log(`Device: ${response}`);
+      handleCommandValue(response);
+    },
+  );
 
   try {
     await state.statusCharacteristic.startNotifications();
-    state.statusCharacteristic.addEventListener("characteristicvaluechanged", (event) => {
-      const status = parseJsonPayload(event, "status");
-      if (status) {
-        updateStatusUi(status);
-      }
-    });
+    state.statusCharacteristic.addEventListener(
+      "characteristicvaluechanged",
+      (event) => {
+        const status = parseJsonPayload(event, "status");
+        if (status) {
+          updateStatusUi(status);
+        }
+      },
+    );
   } catch (error) {
     log(`Status notifications unavailable: ${error.message}`, "warn");
   }
 
   try {
     await state.configCharacteristic.startNotifications();
-    state.configCharacteristic.addEventListener("characteristicvaluechanged", (event) => {
-      const config = parseJsonPayload(event, "config");
-      if (config) {
-        updateConfigUi(config);
-      }
-    });
+    state.configCharacteristic.addEventListener(
+      "characteristicvaluechanged",
+      (event) => {
+        const config = parseJsonPayload(event, "config");
+        if (config) {
+          updateConfigUi(config);
+        }
+      },
+    );
   } catch (error) {
     log(`Config notifications unavailable: ${error.message}`, "warn");
   }
@@ -1795,10 +2018,18 @@ async function sendCommand(text, matcher, timeoutMs, options = {}) {
         return matched;
       }
     : null;
-  const waiter = wrappedMatcher ? waitForCommand(wrappedMatcher, timeoutMs) : null;
-  const writePromise = writeTextCharacteristic(state.commandCharacteristic, text).catch((error) => {
+  const waiter = wrappedMatcher
+    ? waitForCommand(wrappedMatcher, timeoutMs)
+    : null;
+  const writePromise = writeTextCharacteristic(
+    state.commandCharacteristic,
+    text,
+  ).catch((error) => {
     if (tolerateWriteErrorAfterResponse && responseMatched) {
-      log(`Ignoring command write error after device response: ${error.message}`, "warn");
+      log(
+        `Ignoring command write error after device response: ${error.message}`,
+        "warn",
+      );
       return null;
     }
     throw error;
@@ -1822,18 +2053,18 @@ async function sendCommand(text, matcher, timeoutMs, options = {}) {
 }
 
 async function setHooksEnabled(enabled) {
-  await writeTextCharacteristic(state.configCharacteristic, `hooks=${enabled ? 1 : 0}`);
+  await writeTextCharacteristic(
+    state.configCharacteristic,
+    `hooks=${enabled ? 1 : 0}`,
+  );
   await refreshStatus();
   log(`CAN hooks ${enabled ? "enabled" : "disabled"}`);
 }
 
 async function rebootDevice() {
-  await sendCommand(
-    "reboot",
-    (value) => value.startsWith("restarting"),
-    4000,
-    { tolerateWriteErrorAfterResponse: true }
-  );
+  await sendCommand("reboot", (value) => value.startsWith("restarting"), 4000, {
+    tolerateWriteErrorAfterResponse: true,
+  });
   log("Device restart requested");
 }
 
@@ -1884,17 +2115,20 @@ async function waitForOtaBytes(expectedSize) {
     const shouldRequestStatus =
       lastStatusCommandAt === 0 ||
       remaining <= OTA_TAIL_FLUSH_WINDOW_BYTES ||
-      (Date.now() - lastStatusCommandAt) >= OTA_FLUSH_STATUS_INTERVAL_MS;
+      Date.now() - lastStatusCommandAt >= OTA_FLUSH_STATUS_INTERVAL_MS;
 
     if (shouldRequestStatus) {
       lastStatusCommandAt = Date.now();
       const statusResponse = await sendCommand(
         "status",
         (value) => value === "status_ok" || value.startsWith("ota_error:"),
-        4000
+        4000,
       ).catch(() => null);
 
-      if (typeof statusResponse === "string" && statusResponse.startsWith("ota_error:")) {
+      if (
+        typeof statusResponse === "string" &&
+        statusResponse.startsWith("ota_error:")
+      ) {
         throw new Error(statusResponse);
       }
 
@@ -1909,18 +2143,21 @@ async function waitForOtaBytes(expectedSize) {
         return lastStatus;
       }
 
-      const stalled = (Date.now() - lastAdvanceAt) >= OTA_STALLED_TAIL_GRACE_MS;
+      const stalled = Date.now() - lastAdvanceAt >= OTA_STALLED_TAIL_GRACE_MS;
       if (
         remaining <= OTA_TAIL_FLUSH_WINDOW_BYTES &&
         stalled &&
         tailResendCount < OTA_TAIL_RESEND_LIMIT &&
         state.pendingFirmware
       ) {
-        log(`Re-sending trailing ${expectedSize - refreshedWritten} OTA bytes from ${refreshedWritten}`, "warn");
+        log(
+          `Re-sending trailing ${expectedSize - refreshedWritten} OTA bytes from ${refreshedWritten}`,
+          "warn",
+        );
         const result = await writeChunkWithRetry(
           state.pendingFirmware,
           refreshedWritten,
-          DEFAULT_OTA_CHUNK_SIZE
+          DEFAULT_OTA_CHUNK_SIZE,
         );
         lastWritten = result.offset;
         lastAdvanceAt = Date.now();
@@ -1932,7 +2169,9 @@ async function waitForOtaBytes(expectedSize) {
   }
 
   const written = lastStatus?.otaBytesWritten ?? 0;
-  throw new Error(`Device only received ${written}/${expectedSize} bytes before finalize`);
+  throw new Error(
+    `Device only received ${written}/${expectedSize} bytes before finalize`,
+  );
 }
 
 async function writeChunkWithRetry(firmware, offset, chunkSize) {
@@ -1952,7 +2191,10 @@ async function writeChunkWithRetry(firmware, offset, chunkSize) {
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      log(`Chunk write failed at ${offset} (attempt ${attempt}/${OTA_CHUNK_RETRY_LIMIT}): ${lastError.message}`, "warn");
+      log(
+        `Chunk write failed at ${offset} (attempt ${attempt}/${OTA_CHUNK_RETRY_LIMIT}): ${lastError.message}`,
+        "warn",
+      );
 
       const status = await readStatusSnapshot().catch(() => null);
       const deviceOffset = status?.otaBytesWritten ?? null;
@@ -1969,7 +2211,7 @@ async function writeChunkWithRetry(firmware, offset, chunkSize) {
   }
 
   throw new Error(
-    `Chunk upload stalled near ${offset}-${initialEnd}: ${lastError.message}`
+    `Chunk upload stalled near ${offset}-${initialEnd}: ${lastError.message}`,
   );
 }
 
@@ -1984,7 +2226,11 @@ async function uploadFirmwareChunks(firmware) {
     chunkSize = result.chunkSize;
     chunkCount += 1;
 
-    setProgress(offset, firmware.byteLength, `Uploading ${offset} / ${firmware.byteLength} bytes`);
+    setProgress(
+      offset,
+      firmware.byteLength,
+      `Uploading ${offset} / ${firmware.byteLength} bytes`,
+    );
 
     if (chunkCount % OTA_PROGRESS_STATUS_EVERY === 0) {
       await readStatusSnapshot().catch(() => null);
@@ -2006,7 +2252,9 @@ async function ensureSecureMetadataReady(pkg, firmware) {
   }
 
   if (!secureDevice && pkg.secureOta) {
-    throw new Error("Selected package requires the secure OTA firmware on the device");
+    throw new Error(
+      "Selected package requires the secure OTA firmware on the device",
+    );
   }
 
   if (!pkg.sha256 || !pkg.signatureHex || !pkg.deliveryIvHex) {
@@ -2015,8 +2263,9 @@ async function ensureSecureMetadataReady(pkg, firmware) {
 
   const response = await sendCommand(
     `ota_meta:${pkg.size}:${pkg.sha256}:${pkg.signatureHex}:${pkg.deliveryIvHex}`,
-    (value) => value.startsWith("ota_meta_ok:") || value.startsWith("ota_error:"),
-    8000
+    (value) =>
+      value.startsWith("ota_meta_ok:") || value.startsWith("ota_error:"),
+    8000,
   );
 
   if (!response.startsWith("ota_meta_ok:")) {
@@ -2031,7 +2280,11 @@ function sanitizeInstallPackage(pkg) {
   }
 
   const safeSize = Number(pkg?.size ?? 0);
-  if (!Number.isInteger(safeSize) || safeSize <= 0 || safeSize > (16 * 1024 * 1024)) {
+  if (
+    !Number.isInteger(safeSize) ||
+    safeSize <= 0 ||
+    safeSize > 16 * 1024 * 1024
+  ) {
     throw new Error("Package size is invalid");
   }
 
@@ -2040,9 +2293,15 @@ function sanitizeInstallPackage(pkg) {
     id: safeId,
     size: safeSize,
     secureOta: Boolean(pkg?.secureOta),
-    sha256: String(pkg?.sha256 ?? "").trim().toLowerCase(),
-    signatureHex: String(pkg?.signatureHex ?? "").trim().toLowerCase(),
-    deliveryIvHex: String(pkg?.deliveryIvHex ?? "").trim().toLowerCase(),
+    sha256: String(pkg?.sha256 ?? "")
+      .trim()
+      .toLowerCase(),
+    signatureHex: String(pkg?.signatureHex ?? "")
+      .trim()
+      .toLowerCase(),
+    deliveryIvHex: String(pkg?.deliveryIvHex ?? "")
+      .trim()
+      .toLowerCase(),
   };
 
   if (safePackage.secureOta) {
@@ -2056,7 +2315,7 @@ function sanitizeInstallPackage(pkg) {
 
     if (
       !/^[a-f0-9]{2,160}$/.test(safePackage.signatureHex) ||
-      (safePackage.signatureHex.length % 2) !== 0
+      safePackage.signatureHex.length % 2 !== 0
     ) {
       throw new Error("Package signature metadata is invalid");
     }
@@ -2082,18 +2341,24 @@ async function installFirmware(pkg) {
   }
 
   if (installPackage.size && firmware.byteLength !== installPackage.size) {
-    throw new Error(`Package size mismatch: expected ${installPackage.size}, received ${firmware.byteLength}`);
+    throw new Error(
+      `Package size mismatch: expected ${installPackage.size}, received ${firmware.byteLength}`,
+    );
   }
 
   state.pendingFirmware = firmware;
 
   await ensureSecureMetadataReady(installPackage, firmware);
 
-  setProgress(0, firmware.byteLength, `Starting OTA for ${installPackage.label}`);
+  setProgress(
+    0,
+    firmware.byteLength,
+    `Starting OTA for ${installPackage.label}`,
+  );
   const readyResponse = await sendCommand(
     `ota_begin:${firmware.byteLength}`,
     (value) => value.startsWith("ota_ready:") || value.startsWith("ota_error:"),
-    8000
+    8000,
   );
 
   if (!readyResponse.startsWith("ota_ready:")) {
@@ -2102,7 +2367,11 @@ async function installFirmware(pkg) {
 
   await uploadFirmwareChunks(firmware);
 
-  setProgress(firmware.byteLength, firmware.byteLength, "Waiting for device to confirm all bytes");
+  setProgress(
+    firmware.byteLength,
+    firmware.byteLength,
+    "Waiting for device to confirm all bytes",
+  );
   await waitForOtaBytes(firmware.byteLength);
 
   setProgress(firmware.byteLength, firmware.byteLength, "Finalizing OTA");
@@ -2110,14 +2379,18 @@ async function installFirmware(pkg) {
     "ota_finish",
     (value) => value.startsWith("ota_done:") || value.startsWith("ota_error:"),
     15000,
-    { tolerateWriteErrorAfterResponse: true }
+    { tolerateWriteErrorAfterResponse: true },
   );
 
   if (!finishResponse.startsWith("ota_done:")) {
     throw new Error(finishResponse);
   }
 
-  setProgress(firmware.byteLength, firmware.byteLength, "OTA complete, device restarting");
+  setProgress(
+    firmware.byteLength,
+    firmware.byteLength,
+    "OTA complete, device restarting",
+  );
   log("OTA finished successfully");
   return { deviceWillRestart: true };
 }
@@ -2125,8 +2398,9 @@ async function installFirmware(pkg) {
 async function abortOta() {
   const response = await sendCommand(
     "ota_abort",
-    (value) => value.startsWith("ota_aborted") || value.startsWith("ota_error:"),
-    4000
+    (value) =>
+      value.startsWith("ota_aborted") || value.startsWith("ota_error:"),
+    4000,
   );
   log(`Abort response: ${response}`);
   setProgress(0, 1, "OTA aborted");
@@ -2197,7 +2471,10 @@ export function initPortalController() {
         portalView.passwordGateNote = "Current password is required.";
         return;
       }
-      const validationMessage = passwordValidationMessage(newPassword, state.user?.email ?? "");
+      const validationMessage = passwordValidationMessage(
+        newPassword,
+        state.user?.email ?? "",
+      );
       if (validationMessage !== "") {
         portalView.passwordGateNote = validationMessage;
         return;
@@ -2326,7 +2603,7 @@ export function initPortalController() {
         await createCustomer(
           portalView.adminCreateUserEmail,
           portalView.adminCreateUserPassword,
-          portalView.adminCreateUserGroups
+          portalView.adminCreateUserGroups,
         );
         log("Customer account created");
       } catch (error) {
@@ -2335,7 +2612,9 @@ export function initPortalController() {
     },
     saveCustomerGroups: async (customerId) => {
       const customer = state.customers.find((entry) => entry.id === customerId);
-      const customerView = portalView.adminCustomers.find((entry) => entry.id === customerId);
+      const customerView = portalView.adminCustomers.find(
+        (entry) => entry.id === customerId,
+      );
       if (!customer || !customerView) {
         return;
       }
@@ -2343,7 +2622,10 @@ export function initPortalController() {
       try {
         await saveCustomerGroups(customer, customerView.accessGroupsInput);
       } catch (error) {
-        log(`Customer group update failed for ${customer.email}: ${error.message}`, "error");
+        log(
+          `Customer group update failed for ${customer.email}: ${error.message}`,
+          "error",
+        );
       }
     },
     toggleCustomerAccess: async (customerId) => {
@@ -2355,7 +2637,10 @@ export function initPortalController() {
       try {
         await setCustomerActive(customer, customer.accessState !== "active");
       } catch (error) {
-        log(`Customer access update failed for ${customer.email}: ${error.message}`, "error");
+        log(
+          `Customer access update failed for ${customer.email}: ${error.message}`,
+          "error",
+        );
       }
     },
     deleteCustomer: async (customerId) => {
@@ -2367,7 +2652,10 @@ export function initPortalController() {
       try {
         await deleteCustomer(customer);
       } catch (error) {
-        log(`Customer delete failed for ${customer.email}: ${error.message}`, "error");
+        log(
+          `Customer delete failed for ${customer.email}: ${error.message}`,
+          "error",
+        );
       }
     },
     reloadPasskeys: async () => {
@@ -2395,7 +2683,9 @@ export function initPortalController() {
     },
     savePackageGroups: async (packageId) => {
       const pkg = state.packages.find((entry) => entry.id === packageId);
-      const packageView = portalView.adminPackages.find((entry) => entry.id === packageId);
+      const packageView = portalView.adminPackages.find(
+        (entry) => entry.id === packageId,
+      );
       if (!pkg || !packageView) {
         return;
       }
@@ -2403,7 +2693,10 @@ export function initPortalController() {
       try {
         await savePackageGroups(pkg, packageView.accessGroupsInput);
       } catch (error) {
-        log(`Package group update failed for ${pkg.label}: ${error.message}`, "error");
+        log(
+          `Package group update failed for ${pkg.label}: ${error.message}`,
+          "error",
+        );
       }
     },
     deletePackage: async (packageId) => {
@@ -2436,12 +2729,18 @@ export function initPortalController() {
   });
 
   watch(
-    () => [portalView.passwordCurrent, portalView.passwordNew, portalView.passwordConfirm, state.mustChangePassword, state.passwordDialogOpen],
+    () => [
+      portalView.passwordCurrent,
+      portalView.passwordNew,
+      portalView.passwordConfirm,
+      state.mustChangePassword,
+      state.passwordDialogOpen,
+    ],
     () => {
       if (portalView.passwordGateVisible) {
         updatePasswordGateValidation();
       }
-    }
+    },
   );
 
   window.addEventListener("hashchange", syncPageFromLocation);
