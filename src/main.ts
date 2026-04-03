@@ -40,9 +40,7 @@ async function bootstrapEnvironment(): Promise<void> {
     return;
   }
 
-  if (import.meta.env.DEV) {
-    await bootstrapPortalSession();
-  }
+  await bootstrapPortalSession();
 }
 
 async function main(): Promise<void> {

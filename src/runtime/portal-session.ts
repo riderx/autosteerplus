@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 
 const PORTAL_ORIGIN = 'https://fsd.teslaandroid.com';
 const PORTAL_URL = new URL(PORTAL_ORIGIN);
-const DEV_PORTAL_BOOTSTRAP_PATH = '/__portal__/';
+const WEB_PORTAL_BOOTSTRAP_PATH = '/__portal__/';
 
 let bridgeInstalled = false;
 let baseFetch: typeof window.fetch | null = null;
@@ -47,20 +47,12 @@ function updateMetaTag(name: string, content: string): void {
   tag.content = content;
 }
 
-function isDevProxyEnvironment(): boolean {
-  return import.meta.env.DEV && !Capacitor.isNativePlatform();
-}
-
 function getBootstrapUrl(): string {
   if (Capacitor.isNativePlatform()) {
     return `${PORTAL_ORIGIN}/`;
   }
 
-  if (isDevProxyEnvironment()) {
-    return DEV_PORTAL_BOOTSTRAP_PATH;
-  }
-
-  return `${PORTAL_ORIGIN}/`;
+  return WEB_PORTAL_BOOTSTRAP_PATH;
 }
 
 export function installPortalFetchBridge(): void {
@@ -90,10 +82,6 @@ export function installPortalFetchBridge(): void {
 }
 
 export async function bootstrapPortalSession(): Promise<void> {
-  if (!Capacitor.isNativePlatform() && !isDevProxyEnvironment()) {
-    return;
-  }
-
   if (Capacitor.isNativePlatform() && !bridgeInstalled) {
     installPortalFetchBridge();
   }
