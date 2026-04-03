@@ -234,7 +234,8 @@ body {
 }
 
 .hero-auth .hero-title {
-  max-width: 8ch;
+  max-width: none;
+  white-space: nowrap;
 }
 
 .panel-heading {
