@@ -1,8 +1,8 @@
 const PORTAL_ORIGIN = 'https://fsd.teslaandroid.com';
 const PORTAL_URL = new URL(PORTAL_ORIGIN);
 const PORTAL_BOOTSTRAP_PATH = '/__portal__';
-const YOUTUBE_EMBED_ORIGIN = 'https://www.youtube.com';
 const YOUTUBE_PLAYER_PATH = '/yt/player/';
+const YOUTUBE_WRAPPER_ORIGIN = 'https://yt.tslap.store';
 
 type Env = {
   ASSETS: {
@@ -41,7 +41,7 @@ async function proxyPortalRequest(request: Request): Promise<Response> {
   });
 }
 
-function renderYouTubePlayerPage(requestUrl: URL): Response {
+function redirectToYouTubeWorker(requestUrl: URL): Response {
   const videoId = requestUrl.pathname.slice(YOUTUBE_PLAYER_PATH.length).replace(/\/+$/, '');
 
   if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
@@ -53,59 +53,13 @@ function renderYouTubePlayerPage(requestUrl: URL): Response {
     });
   }
 
-  const wrapperOrigin = requestUrl.origin;
-  const wrapperUrl = `${wrapperOrigin}${requestUrl.pathname}${requestUrl.search}`;
-  const youtubeUrl = new URL(`/embed/${videoId}`, YOUTUBE_EMBED_ORIGIN);
+  const location = new URL(`/player/${videoId}${requestUrl.search}`, YOUTUBE_WRAPPER_ORIGIN).toString();
 
-  youtubeUrl.searchParams.set('rel', '0');
-  youtubeUrl.searchParams.set('playsinline', '1');
-  youtubeUrl.searchParams.set('modestbranding', '1');
-  youtubeUrl.searchParams.set('origin', wrapperOrigin);
-  youtubeUrl.searchParams.set('widget_referrer', wrapperUrl);
-
-  const html = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    <meta name="referrer" content="origin-when-cross-origin">
-    <title>YouTube player</title>
-    <style>
-      :root { color-scheme: dark; }
-      html, body {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-        background: #000;
-      }
-      body {
-        overflow: hidden;
-      }
-      iframe {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border: 0;
-        background: #000;
-      }
-    </style>
-  </head>
-  <body>
-    <iframe
-      src="${youtubeUrl.toString()}"
-      title="YouTube video player"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      allowfullscreen
-      referrerpolicy="origin-when-cross-origin"
-    ></iframe>
-  </body>
-</html>`;
-
-  return new Response(html, {
+  return new Response(null, {
+    status: 302,
     headers: {
-      'content-type': 'text/html; charset=utf-8',
-      'cache-control': 'public, max-age=300',
-      'referrer-policy': 'origin-when-cross-origin',
+      location,
+      'cache-control': 'no-store',
     },
   });
 }
@@ -119,7 +73,7 @@ export default {
     }
 
     if (isYouTubePlayerPath(url.pathname)) {
-      return renderYouTubePlayerPage(url);
+      return redirectToYouTubeWorker(url);
     }
 
     return env.ASSETS.fetch(request);

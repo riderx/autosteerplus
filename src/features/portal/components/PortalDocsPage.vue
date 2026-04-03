@@ -124,6 +124,28 @@
               <p :class="mutedTextClass">{{ card.body }}</p>
             </article>
           </div>
+          <div :class="['mt-5', detailGridClass]">
+            <article :class="nestedCardClass">
+              <div class="grid gap-5 lg:grid-cols-2 lg:items-center">
+                <div class="grid gap-3">
+                  <span :class="panelLabelClass">Portal reference</span>
+                  <strong>What the management portal should look like</strong>
+                  <p :class="mutedTextClass">
+                    After login, this is the kind of connected portal state you
+                    should expect when the device is online and the bridge is
+                    working properly.
+                  </p>
+                </div>
+                <PortalZoomableImage
+                  class="lg:justify-self-end lg:max-w-lg"
+                  :src="portalReferenceImage"
+                  alt="Autosteerplus portal showing a connected device state on mobile"
+                  preview-aspect-class="aspect-[5/4]"
+                  preview-image-class="object-cover object-top"
+                />
+              </div>
+            </article>
+          </div>
         </section>
 
         <section :class="panelClass">
@@ -248,15 +270,12 @@
             <article :class="nestedCardClass">
               <span :class="panelLabelClass">Reference</span>
               <strong>Expected FSD visualization</strong>
-              <div
-                class="overflow-hidden rounded-[20px] border border-[rgba(60,60,67,0.14)] bg-white"
-              >
-                <img
-                  class="block aspect-[4/3] w-full object-contain"
-                  :src="fsdVisualisationImage"
-                  alt="Expected Full Self-Driving visualization when Autosteerplus is working"
-                />
-              </div>
+              <PortalZoomableImage
+                :src="fsdInActionImage"
+                alt="Expected Full Self-Driving view on the Tesla screen when Autosteerplus is working"
+                preview-aspect-class="aspect-[5/4]"
+                preview-image-class="object-cover object-center"
+              />
             </article>
           </div>
         </section>
@@ -275,6 +294,50 @@
             selector. Change the distance setting in the Tesla UI, then the
             matching speed profile is applied automatically.
           </p>
+          <div :class="['mt-5', summaryGridClass]">
+            <article :class="nestedCardClass">
+              <span :class="panelLabelClass">Step 1</span>
+              <strong>Set the distance from the steering wheel</strong>
+              <p :class="mutedTextClass">
+                Use the car controls first. Pick the distance value that should
+                map to the profile you want.
+              </p>
+              <PortalZoomableImage
+                :src="setDriveProfileFromWheelImage"
+                alt="Driver using the steering wheel controls to change the Tesla follow-distance setting"
+                preview-aspect-class="aspect-[4/3]"
+                preview-image-class="object-cover object-center"
+              />
+            </article>
+            <article :class="nestedCardClass">
+              <span :class="panelLabelClass">Step 2</span>
+              <strong>Confirm the change on the Tesla screen</strong>
+              <p :class="mutedTextClass">
+                Make sure the car UI shows the selected distance before you
+                assume the profile changed.
+              </p>
+              <PortalZoomableImage
+                :src="profileSetActionDoneCarScreenImage"
+                alt="Tesla screen showing the selected following-distance value after the driver changes it"
+                preview-aspect-class="aspect-[4/3]"
+                preview-image-class="object-cover object-center"
+              />
+            </article>
+            <article :class="nestedCardClass">
+              <span :class="panelLabelClass">Step 3</span>
+              <strong>Check which profile the portal reports</strong>
+              <p :class="mutedTextClass">
+                The portal should reflect the active profile so you can confirm
+                the car-side change really propagated.
+              </p>
+              <PortalZoomableImage
+                :src="seeDriveProfileImage"
+                alt="Autosteerplus portal showing the active drive profile after the distance setting is changed"
+                preview-aspect-class="aspect-[4/3]"
+                preview-image-class="object-cover object-top"
+              />
+            </article>
+          </div>
           <div :class="detailGridClass">
             <article :class="nestedCardClass">
               <span :class="panelLabelClass">How to set it</span>
@@ -409,9 +472,14 @@
 import { Capacitor } from "@capacitor/core";
 import { kPage } from "konsta/vue";
 
-import fsdVisualisationImage from "../../../../fsd_visualisation.png";
+import fsdInActionImage from "../../../../fsd_in_Action.JPG";
+import portalReferenceImage from "../../../../IMG_0541.PNG";
+import profileSetActionDoneCarScreenImage from "../../../../profile_set_action_done_car_screen.jpg";
+import seeDriveProfileImage from "../../../../see_drive_profile.PNG";
+import setDriveProfileFromWheelImage from "../../../../set_drive_profile_from_wheel.jpg";
 import PortalActionButton from "./PortalActionButton.vue";
 import PortalRadiusCheck from "./PortalRadiusCheck.vue";
+import PortalZoomableImage from "./PortalZoomableImage.vue";
 import {
   actionRowClass,
   badgeRowClass,

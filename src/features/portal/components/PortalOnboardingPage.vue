@@ -515,8 +515,8 @@
               >
                 <img
                   class="block aspect-[4/3] w-full object-contain"
-                  :src="fsdVisualisationImage"
-                  alt="Expected Full Self-Driving visualization when Autosteerplus is working"
+                  :src="fsdInActionImage"
+                  alt="Expected Full Self-Driving view on the Tesla screen when Autosteerplus is working"
                 />
               </div>
             </article>
@@ -604,7 +604,7 @@ import { Capacitor } from "@capacitor/core";
 import { computed, nextTick, ref, watch } from "vue";
 import { kPage } from "konsta/vue";
 
-import fsdVisualisationImage from "../../../../fsd_visualisation.png";
+import fsdInActionImage from "../../../../fsd_in_Action.JPG";
 import PortalActionButton from "./PortalActionButton.vue";
 import PortalRadiusCheck from "./PortalRadiusCheck.vue";
 import {

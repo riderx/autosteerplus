@@ -19,15 +19,14 @@
             <span :class="panelLabelClass">Before install</span>
             <strong>Small Summon circle</strong>
           </div>
-          <figure
-            class="overflow-hidden rounded-[20px] border border-[rgba(60,60,67,0.14)] bg-white"
-          >
-            <img
-              class="block aspect-video w-full object-contain"
-              :src="tinyRadiusImage"
-              alt="Summon map showing a smaller blue range circle before install, which may be around 5 to 40 meter diameter depending on region"
-            />
-          </figure>
+          <PortalZoomableImage
+            class="mx-auto w-full max-w-lg"
+            :src="tinyRadiusImage"
+            alt="Summon map showing a smaller blue range circle before install, which may be around 5 to 40 meter diameter depending on region"
+            preview-aspect-class="aspect-[3/4]"
+            preview-image-class="object-cover"
+            preview-object-position="center 78%"
+          />
           <div class="flex flex-wrap gap-3">
             <span
               class="inline-flex rounded-full border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.92)] px-4 py-2 text-[0.88rem] leading-[1.35] text-[#1f2937]"
@@ -46,15 +45,14 @@
             <span :class="panelLabelClass">After install</span>
             <strong>Large Summon circle</strong>
           </div>
-          <figure
-            class="overflow-hidden rounded-[20px] border border-[rgba(60,60,67,0.14)] bg-white"
-          >
-            <img
-              class="block aspect-video w-full object-contain"
-              :src="bigRadiusImage"
-              alt="Summon map showing about 200 meter blue range diameter after install"
-            />
-          </figure>
+          <PortalZoomableImage
+            class="mx-auto w-full max-w-lg"
+            :src="bigRadiusImage"
+            alt="Summon map showing about 200 meter blue range diameter after install"
+            preview-aspect-class="aspect-[3/4]"
+            preview-image-class="object-cover"
+            preview-object-position="center 80%"
+          />
           <div class="flex flex-wrap gap-3">
             <span
               class="inline-flex rounded-full border border-[rgba(20,140,70,0.16)] bg-[rgba(20,140,70,0.08)] px-4 py-2 text-[0.88rem] leading-[1.35] text-[#136c37]"
@@ -85,8 +83,9 @@
 </template>
 
 <script setup lang="ts">
-import bigRadiusImage from "../../../../big_raduis.png";
-import tinyRadiusImage from "../../../../tiny_radius.png";
+import bigRadiusImage from "../../../../summon_after.PNG";
+import tinyRadiusImage from "../../../../summon_before.PNG";
+import PortalZoomableImage from "./PortalZoomableImage.vue";
 import {
   mutedTextClass,
   nestedCardClass,
