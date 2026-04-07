@@ -21,6 +21,9 @@ const config: CapacitorConfig = {
     CapacitorHttp: {
       enabled: true,
     },
+    SplashScreen: {
+      launchAutoHide: false,
+    },
     SystemBars: {
       insetsHandling: 'css',
     },
@@ -29,6 +32,10 @@ const config: CapacitorConfig = {
       version: packageVersion,
       defaultChannel: capgoDefaultChannel,
       autoUpdate: capgoAutoUpdate,
+      directUpdate: 'onLaunch',
+      autoSplashscreen: true,
+      autoSplashscreenLoader: true,
+      autoSplashscreenTimeout: 10000,
       appReadyTimeout: 10000,
       responseTimeout: 20,
       autoDeleteFailed: true,
