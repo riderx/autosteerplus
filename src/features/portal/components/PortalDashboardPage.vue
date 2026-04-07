@@ -7,6 +7,18 @@
 
       <main id="dashboard" class="grid grid-cols-12 gap-6">
         <k-card
+          class="col-span-12 overflow-hidden rounded-[22px] border border-[rgba(255,149,0,0.18)] bg-[rgba(255,149,0,0.08)] p-[1.15rem] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_rgba(15,23,42,0.05)]"
+        >
+          <p class="mb-1.5 text-[0.74rem] font-semibold uppercase tracking-[0.08em] text-[#9a3412]">
+            Software advisory
+          </p>
+          <p class="m-0 text-[0.98rem] leading-[1.55] text-[#9a3412]">
+            Do not update the vehicle to software version
+            <code>2026.8.6</code> until further notice.
+          </p>
+        </k-card>
+
+        <k-card
           v-if="!portalView.connectionOnline"
           class="col-span-12 overflow-hidden rounded-[22px] border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.98)] p-[1.15rem] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_rgba(15,23,42,0.05)]"
         >
@@ -34,6 +46,33 @@
         </k-card>
 
         <template v-else>
+          <k-card
+            v-if="portalView.managementUpgradeVisible"
+            class="col-span-12 overflow-hidden rounded-[22px] border border-[rgba(255,149,0,0.18)] bg-[rgba(255,149,0,0.08)] p-[1.15rem] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_rgba(15,23,42,0.05)]"
+          >
+            <p class="mb-1.5 text-[0.74rem] font-semibold uppercase tracking-[0.08em] text-[#9a3412]">
+              Upgrade Required For Device Manager
+            </p>
+            <p class="m-0 text-[0.98rem] leading-[1.55] text-[#9a3412]">
+              {{ portalView.managementUpgradeNote }}
+            </p>
+          </k-card>
+
+          <k-card
+            v-if="
+              portalView.alternateManagementVisible &&
+              portalView.alternateManagementNote !== ''
+            "
+            class="col-span-12 overflow-hidden rounded-[22px] border border-[rgba(10,96,255,0.16)] bg-[rgba(10,96,255,0.05)] p-[1.15rem] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_rgba(15,23,42,0.05)]"
+          >
+            <p class="mb-1.5 text-[0.74rem] font-semibold uppercase tracking-[0.08em] text-[#0a60ff]">
+              Device Manager 2.x
+            </p>
+            <p class="m-0 text-[0.98rem] leading-[1.55] text-[#0a60ff]">
+              {{ portalView.alternateManagementNote }}
+            </p>
+          </k-card>
+
           <PortalStatusPanel />
           <PortalControlsPanel />
           <PortalOtaPanel />

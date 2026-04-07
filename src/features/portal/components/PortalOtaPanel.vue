@@ -22,12 +22,15 @@
     <p id="package-note" class="mt-4 text-[0.98rem] leading-[1.55] text-[rgba(60,60,67,0.82)]">
       {{ portalView.packageNote }}
     </p>
-    <div class="mt-4 flex flex-wrap items-center gap-3">
+    <div
+      v-if="portalView.otaActivityVisible"
+      class="mt-4 flex flex-wrap items-center gap-3"
+    >
       <PortalActionButton id="ota-abort-button" variant="secondary" :disabled="portalView.abortOtaDisabled" @click="portalActions.abortOta()">
         Abort OTA
       </PortalActionButton>
     </div>
-    <div class="mt-5 grid gap-3">
+    <div v-if="portalView.otaActivityVisible" class="mt-5 grid gap-3">
       <div class="flex items-center justify-between gap-3 text-[0.95rem] font-medium text-[rgba(60,60,67,0.82)]">
         <span id="progress-label">{{ portalView.progressLabel }}</span>
         <span id="progress-percent">{{ portalView.progressPercentText }}</span>

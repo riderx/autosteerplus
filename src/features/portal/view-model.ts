@@ -47,6 +47,40 @@ export interface PortalPasskeyView {
   deleteDisabled: boolean;
 }
 
+export interface PortalManagementModeOptionView {
+  id: string;
+  label: string;
+  summary: string;
+}
+
+export interface PortalManagementPayloadView {
+  id: string;
+  label: string;
+  summary: string;
+  enabled: boolean;
+  disabled: boolean;
+}
+
+export interface PortalManagementChoiceOptionView {
+  id: string;
+  label: string;
+}
+
+export interface PortalManagementChoiceView {
+  id: string;
+  label: string;
+  summary: string;
+  value: string;
+  control: "select" | "range";
+  disabled: boolean;
+  options: PortalManagementChoiceOptionView[];
+  min: number;
+  max: number;
+  step: number;
+  suffix: string;
+  showValue: boolean;
+}
+
 export interface PortalActions {
   login: () => Promise<void>;
   signInWithPasskey: () => Promise<void>;
@@ -66,11 +100,21 @@ export interface PortalActions {
   refreshStatus: () => Promise<void>;
   rebootDevice: () => Promise<void>;
   toggleHooks: (enabled: boolean) => Promise<void>;
+  setOperationMode: (modeId: string) => Promise<void>;
+  setManagementPayloadEnabled: (
+    payloadId: string,
+    enabled: boolean,
+  ) => Promise<void>;
+  setManagementChoiceValue: (
+    choiceId: string,
+    value: string | number,
+  ) => Promise<void>;
   abortOta: () => Promise<void>;
   installPackage: (packageId: string) => Promise<void>;
   syncShopifyCustomers: () => Promise<void>;
   reloadPackages: () => Promise<void>;
   reloadCustomers: () => Promise<void>;
+  saveDeviceManagementLock: () => Promise<void>;
   createCustomer: () => Promise<void>;
   saveCustomerGroups: (customerId: number) => Promise<void>;
   toggleCustomerAccess: (customerId: number) => Promise<void>;
@@ -106,11 +150,15 @@ export const portalActions: PortalActions = {
   refreshStatus: noopAsync,
   rebootDevice: noopAsync,
   toggleHooks: noopAsync,
+  setOperationMode: noopAsync,
+  setManagementPayloadEnabled: noopAsync,
+  setManagementChoiceValue: noopAsync,
   abortOta: noopAsync,
   installPackage: noopAsync,
   syncShopifyCustomers: noopAsync,
   reloadPackages: noopAsync,
   reloadCustomers: noopAsync,
+  saveDeviceManagementLock: noopAsync,
   createCustomer: noopAsync,
   saveCustomerGroups: noopAsync,
   toggleCustomerAccess: noopAsync,
@@ -171,6 +219,11 @@ export const portalView = reactive({
   adminCreateUserGroups: "",
   adminCreateUserResult: "",
   adminCreateUserDisabled: true,
+  adminDeviceManagementVersion: "",
+  adminDeviceManagementGroups: "",
+  adminDeviceManagementResult: "",
+  adminDeviceManagementDisabled: true,
+  adminDeviceManagementNote: "",
   adminCustomersNote: "",
   adminCustomers: [] as PortalAdminCustomerView[],
   adminPackagesNote: "",
@@ -182,18 +235,33 @@ export const portalView = reactive({
   reloadPasskeysDisabled: true,
   registerPasskeyDisabled: true,
   adminRegisterPasskeyDisabled: true,
+  passkeysEnabled: true,
   connectDisabled: true,
   disconnectDisabled: true,
   refreshDisabled: true,
   rebootDisabled: true,
   hooksDisabled: true,
+  deviceConfigDisabled: true,
   hooksEnabled: false,
   abortOtaDisabled: true,
   connectionLabel: "Disconnected",
   connectionOnline: false,
   configNote: "Connect to the device before editing persistent settings.",
+  managementUpgradeVisible: false,
+  managementUpgradeNote: "",
+  alternateManagementVisible: false,
+  alternateManagementNote: "",
+  managementModeState: "-",
+  managementModeSummary:
+    "Choose the feature bundle that matches the vehicle hardware and package on the car.",
+  managementSelectedModeId: "",
+  managementModeOptions: [] as PortalManagementModeOptionView[],
+  managementPayloads: [] as PortalManagementPayloadView[],
+  managementChoices: [] as PortalManagementChoiceView[],
+  payloadResetAfterOta: false,
   installPackages: [] as PortalInstallPackageView[],
   packageNote: "No packages loaded yet.",
+  otaActivityVisible: false,
   progressLabel: "No transfer started",
   progressPercent: 0,
   progressPercentText: "0%",

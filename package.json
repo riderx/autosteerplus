@@ -9,6 +9,7 @@
     "build": "bun run typecheck && vite build",
     "preview": "vite preview",
     "deploy:web": "bun run build && bunx wrangler deploy",
+    "fix:ios": "bun ./scripts/fix-ios-spm.mjs",
     "cap:sync": "bun run build && bunx cap sync && bun run fix:ios",
     "ios:open": "bun run cap:sync && bunx cap open ios",
     "android:open": "bun run cap:sync && bunx cap open android"

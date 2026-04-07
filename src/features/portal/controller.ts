@@ -60,6 +60,8 @@ const state = {
   statusPollTimer: null,
   connected: false,
   updating: false,
+  savingDeviceConfig: false,
+  savingDeviceManagementLock: false,
   deletingPackageId: "",
   savingPackageGroupsId: "",
   syncingCustomers: false,
@@ -79,6 +81,12 @@ const state = {
   turnstileToken: "",
   turnstileRenderRetryTimer: 0,
   turnstileRenderRetryCount: 0,
+  passkeyCount: 0,
+  passkeysEnabled: true,
+  passkeysDisabledReason: "",
+  passwordChangeWithPasskeyAllowed: false,
+  deviceManagementLock: null,
+  managementCatalog: null,
 };
 
 function readCsrfToken() {
@@ -311,14 +319,18 @@ function setAdvancedMode(enabled) {
 function updatePortalControls() {
   const blockedByInteraction = !state.authenticated || interactionGateVisible();
   const isAdmin = hasAdminPanelAccess() && !state.adminPasskeySetupRequired;
+  const configInputsDisabled = deviceConfigInputsDisabled();
 
   portalView.connectDisabled = blockedByInteraction || state.connected;
   portalView.disconnectDisabled = !state.connected || passwordGateVisible();
   portalView.refreshDisabled = !state.connected || passwordGateVisible();
   portalView.rebootDisabled =
-    !state.connected || state.updating || passwordGateVisible();
-  portalView.hooksDisabled =
-    !state.connected || state.updating || passwordGateVisible();
+    !state.connected ||
+    state.updating ||
+    state.savingDeviceConfig ||
+    passwordGateVisible();
+  portalView.hooksDisabled = configInputsDisabled;
+  portalView.deviceConfigDisabled = configInputsDisabled;
   portalView.abortOtaDisabled =
     !state.connected || !state.updating || passwordGateVisible();
   portalView.connectionLabel = state.connected ? "Connected" : "Disconnected";
@@ -334,8 +346,12 @@ function updatePortalControls() {
     !state.authenticated ||
     state.loadingPasskeys ||
     state.deletingPasskeyId !== 0;
-  portalView.registerPasskeyDisabled = !state.authenticated;
-  portalView.adminRegisterPasskeyDisabled = !state.authenticated;
+  portalView.registerPasskeyDisabled =
+    !state.authenticated || !state.passkeysEnabled;
+  portalView.adminRegisterPasskeyDisabled =
+    !state.authenticated || !state.passkeysEnabled;
+  portalView.passkeysEnabled = state.passkeysEnabled;
+  renderManagementConfigViews();
 }
 
 function updateAuthUi() {
@@ -352,11 +368,16 @@ function updateAuthUi() {
   portalView.passkeySetupVisible = passkeySetupGateVisible();
   portalView.adminVisible = authenticated && isAdmin;
   portalView.adminCreateUserDisabled = !isAdmin || state.creatingCustomer;
+  portalView.adminDeviceManagementDisabled =
+    !isAdmin || state.savingDeviceManagementLock;
+  portalView.passkeysEnabled = state.passkeysEnabled;
 
   if (passwordGateShown) {
     portalView.passwordGateNote = state.mustChangePassword
       ? `Your temporary password must be replaced before you can use the portal. Use at least ${PASSWORD_MIN_LENGTH} characters.`
-      : "Enter your current password, then choose a new password with at least 15 characters.";
+      : passwordRequiresCurrent
+        ? "Enter your current password, then choose a new password with at least 15 characters."
+        : "Choose a new password with at least 15 characters.";
   } else if (portalView.passwordGateNote === "") {
     portalView.passwordGateNote = defaultPasswordGateNote();
   }
@@ -502,7 +523,11 @@ function passwordGateVisible() {
 }
 
 function passwordGateRequiresCurrentPassword() {
-  return passwordGateVisible() && !state.mustChangePassword;
+  return (
+    passwordGateVisible() &&
+    !state.mustChangePassword &&
+    !state.passwordChangeWithPasskeyAllowed
+  );
 }
 
 function passwordValidationMessage(password, email = "") {
@@ -640,6 +665,491 @@ function formatTimestamp(timestamp) {
   }
 
   return value.toLocaleString();
+}
+
+function normalizeManagementCatalog(catalog) {
+  if (!catalog || typeof catalog !== "object") {
+    return null;
+  }
+
+  const rawModes =
+    catalog.modes && typeof catalog.modes === "object" ? catalog.modes : {};
+  const rawPayloads =
+    catalog.payloads && typeof catalog.payloads === "object"
+      ? catalog.payloads
+      : {};
+  const rawChoices =
+    catalog.choices && typeof catalog.choices === "object"
+      ? catalog.choices
+      : {};
+
+  const modes = Object.fromEntries(
+    Object.entries(rawModes)
+      .map(([modeId, meta]) => {
+        const safeModeId = String(modeId ?? "").trim();
+        if (!safeModeId) {
+          return null;
+        }
+
+        return [
+          safeModeId,
+          {
+            label: String(meta?.label ?? "").trim(),
+            summary: String(meta?.summary ?? "").trim(),
+          },
+        ];
+      })
+      .filter(Boolean),
+  );
+
+  const payloads = Object.fromEntries(
+    Object.entries(rawPayloads)
+      .map(([payloadId, meta]) => {
+        const safePayloadId = String(payloadId ?? "").trim();
+        if (!safePayloadId) {
+          return null;
+        }
+
+        return [
+          safePayloadId,
+          {
+            label: String(meta?.label ?? "").trim(),
+            summary: String(meta?.summary ?? "").trim(),
+          },
+        ];
+      })
+      .filter(Boolean),
+  );
+
+  const choices = Object.fromEntries(
+    Object.entries(rawChoices)
+      .map(([choiceId, meta]) => {
+        const safeChoiceId = String(choiceId ?? "").trim();
+        if (!safeChoiceId) {
+          return null;
+        }
+
+        const rawOptions =
+          meta?.options && typeof meta.options === "object" ? meta.options : {};
+        const options = Object.fromEntries(
+          Object.entries(rawOptions)
+            .map(([optionId, label]) => {
+              const safeOptionId = String(optionId ?? "").trim();
+              if (!safeOptionId) {
+                return null;
+              }
+
+              return [safeOptionId, String(label ?? "").trim()];
+            })
+            .filter(Boolean),
+        );
+
+        return [
+          safeChoiceId,
+          {
+            label: String(meta?.label ?? "").trim(),
+            summary: String(meta?.summary ?? "").trim(),
+            options,
+            control: String(meta?.control ?? "").trim(),
+            min: Number.isFinite(Number(meta?.min)) ? Number(meta.min) : null,
+            max: Number.isFinite(Number(meta?.max)) ? Number(meta.max) : null,
+            step: Number.isFinite(Number(meta?.step)) ? Number(meta.step) : null,
+            suffix: String(meta?.suffix ?? "").trim(),
+            showValue: Boolean(meta?.showValue),
+          },
+        ];
+      })
+      .filter(Boolean),
+  );
+
+  return { modes, payloads, choices };
+}
+
+function managementCatalog() {
+  return state.managementCatalog ?? {
+    modes: {},
+    payloads: {},
+    choices: {},
+  };
+}
+
+function managementModeMeta(modeId) {
+  const safeModeId = String(modeId ?? "").trim();
+  return managementCatalog().modes[safeModeId] ?? {};
+}
+
+function marketingPayloadMeta(payloadId) {
+  const safePayloadId = String(payloadId ?? "").trim();
+  return managementCatalog().payloads[safePayloadId] ?? {};
+}
+
+function marketingChoiceMeta(choiceId) {
+  const safeChoiceId = String(choiceId ?? "").trim();
+  return managementCatalog().choices[safeChoiceId] ?? {};
+}
+
+function shouldRenderManagementChoice(operationModeId, choiceId) {
+  if (
+    operationModeId === "fsd_v12_v13" &&
+    choiceId === "fsd_v14_speed_profile"
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function normalizeManagementConfig(config) {
+  if (!config || typeof config !== "object") {
+    return null;
+  }
+
+  const operationModeId = String(config?.operationModeId ?? "").trim();
+  const rawModes =
+    Array.isArray(config?.modes) && config.modes.length > 0
+      ? config.modes
+      : Object.keys(managementCatalog().modes);
+  const rawPayloads = Array.isArray(config?.payloads) ? config.payloads : [];
+  const rawChoices = Array.isArray(config?.choices) ? config.choices : [];
+
+  const modes = rawModes
+    .map((mode, index) => {
+      const modeId =
+        typeof mode === "string"
+          ? mode.trim()
+          : String(mode?.id ?? "").trim();
+      if (!modeId) {
+        return null;
+      }
+      const meta = managementModeMeta(modeId);
+      return {
+        id: modeId,
+        label: String(mode?.label ?? meta.label ?? `Preset ${index + 1}`),
+        summary: String(mode?.summary ?? meta.summary ?? ""),
+      };
+    })
+    .filter(Boolean);
+
+  const payloads = rawPayloads
+    .map((payload, index) => {
+      const payloadId = String(payload?.id ?? "").trim();
+      if (!payloadId) {
+        return null;
+      }
+      const meta = marketingPayloadMeta(payloadId);
+      return {
+        id: payloadId,
+        label: String(
+          payload?.label ?? meta.label ?? `Extra payload ${index + 1}`,
+        ),
+        summary: String(payload?.summary ?? meta.summary ?? ""),
+        enabled: Boolean(payload?.enabled),
+      };
+    })
+    .filter(Boolean);
+
+  const choices = rawChoices
+    .map((choice, choiceIndex) => {
+      const choiceId = String(choice?.id ?? "").trim();
+      if (!choiceId || !shouldRenderManagementChoice(operationModeId, choiceId)) {
+        return null;
+      }
+
+      const meta = marketingChoiceMeta(choiceId);
+      const rawOptions =
+        Array.isArray(choice?.options) && choice.options.length > 0
+          ? choice.options
+          : Object.keys(meta.options ?? {});
+      const options = rawOptions
+        .map((option, optionIndex) => {
+          const optionId =
+            typeof option === "string"
+              ? option.trim()
+              : String(option?.id ?? "").trim();
+          if (!optionId) {
+            return null;
+          }
+
+          return {
+            id: optionId,
+            label: String(
+              option?.label ??
+                meta.options?.[optionId] ??
+                `Option ${optionIndex + 1}`,
+            ),
+          };
+        })
+        .filter(Boolean);
+
+      return {
+        id: choiceId,
+        label: String(
+          choice?.label ?? meta.label ?? `Preset setting ${choiceIndex + 1}`,
+        ),
+        summary: String(choice?.summary ?? meta.summary ?? ""),
+        value: String(choice?.value ?? "default").trim() || "default",
+        options,
+        control:
+          String(choice?.control ?? meta.control ?? "").trim() === "range"
+            ? "range"
+            : "select",
+        min: Number.isFinite(Number(choice?.min))
+          ? Number(choice.min)
+          : meta.min,
+        max: Number.isFinite(Number(choice?.max))
+          ? Number(choice.max)
+          : meta.max,
+        step: Number.isFinite(Number(choice?.step))
+          ? Number(choice.step)
+          : meta.step,
+        suffix: String(choice?.suffix ?? meta.suffix ?? "").trim(),
+        showValue:
+          "showValue" in (choice ?? {})
+            ? Boolean(choice?.showValue)
+            : Boolean(meta.showValue),
+      };
+    })
+    .filter(Boolean);
+
+  const selectedMode = modes.find((mode) => mode.id === operationModeId) ?? null;
+  const currentModeMeta = managementModeMeta(operationModeId);
+
+  return {
+    ...config,
+    operationModeId,
+    operationModeLabel: String(
+      config?.operationModeLabel ??
+        selectedMode?.label ??
+        currentModeMeta.label ??
+        (operationModeId ? "Preset" : ""),
+    ),
+    operationModeSummary: String(
+      config?.operationModeSummary ??
+        selectedMode?.summary ??
+        currentModeMeta.summary ??
+        "",
+    ),
+    modes,
+    payloads,
+    choices,
+  };
+}
+
+function normalizeDeviceManagementLock(payload) {
+  const mode = String(payload?.mode ?? "standard").trim();
+  const normalizedMode = ["standard", "upgrade_required", "alternate"].includes(
+    mode,
+  )
+    ? mode
+    : "standard";
+  const hasFirmwareSatisfied =
+    payload !== null &&
+    typeof payload === "object" &&
+    "firmwareSatisfied" in payload;
+
+  return {
+    configured: Boolean(payload?.configured),
+    requiredFirmwareVersion: String(
+      payload?.requiredFirmwareVersion ?? "",
+    ).trim(),
+    accessGroups: Array.isArray(payload?.accessGroups)
+      ? payload.accessGroups.map((group) => String(group).trim()).filter(Boolean)
+      : [],
+    eligible: Boolean(payload?.eligible),
+    mode: normalizedMode,
+    currentFirmwareVersion: String(payload?.currentFirmwareVersion ?? "").trim(),
+    firmwareSatisfied: hasFirmwareSatisfied
+      ? payload.firmwareSatisfied === null
+        ? null
+        : Boolean(payload.firmwareSatisfied)
+      : null,
+    adminAlwaysIncluded: Boolean(payload?.adminAlwaysIncluded),
+  };
+}
+
+function applyDeviceManagementBootstrap(payload) {
+  state.deviceManagementLock = normalizeDeviceManagementLock(
+    payload?.deviceManagementLock,
+  );
+  state.managementCatalog = normalizeManagementCatalog(
+    payload?.deviceManagementCatalog,
+  );
+  if (state.lastConfig) {
+    state.lastConfig = normalizeManagementConfig(state.lastConfig);
+  }
+  renderDeviceManagementViews();
+  renderManagementConfigViews();
+}
+
+function deviceManagementLockState() {
+  return normalizeDeviceManagementLock(state.deviceManagementLock);
+}
+
+function deviceManagementUsesAlternateUi() {
+  return (
+    state.authenticated &&
+    state.connected &&
+    deviceManagementLockState().mode === "alternate"
+  );
+}
+
+function deviceManagementUpgradeRequired() {
+  return (
+    state.authenticated &&
+    state.connected &&
+    deviceManagementLockState().mode === "upgrade_required"
+  );
+}
+
+function deviceManagementUpgradeMessage(lock = deviceManagementLockState()) {
+  if (!lock.requiredFirmwareVersion) {
+    return "Upgrade the connected device to the required firmware before switching to Device Manager.";
+  }
+
+  const currentVersion = lock.currentFirmwareVersion || "unknown";
+  return `This account is enrolled in Device Manager. The connected device reports ${currentVersion}; upgrade to ${lock.requiredFirmwareVersion} or newer first.`;
+}
+
+function deviceManagementAudienceSummary(lock = deviceManagementLockState()) {
+  if (!lock.configured) {
+    return "Admins are always included. Set a required firmware version to enable Device Manager, then add customer access groups if needed.";
+  }
+
+  const customerAudience =
+    lock.accessGroups.length > 0
+      ? `Matching customer groups: ${lock.accessGroups.join(", ")}.`
+      : "Customer rollout is disabled, so admins only.";
+  return `Required firmware: ${lock.requiredFirmwareVersion}. ${customerAudience}`;
+}
+
+function alternateDeviceManagementMessage() {
+  return "This device uses the newer 2.x Device Manager controls. Pick the preset that matches the car, then review any extra payload toggles before installing firmware.";
+}
+
+function deviceConfigInputsDisabled() {
+  return (
+    !state.connected ||
+    state.updating ||
+    state.savingDeviceConfig ||
+    interactionGateVisible()
+  );
+}
+
+function normalizedRangeChoiceValue(choice) {
+  const min = Number.isFinite(Number(choice?.min)) ? Number(choice.min) : 0;
+  const max = Number.isFinite(Number(choice?.max)) ? Number(choice.max) : min;
+  const step =
+    Number.isFinite(Number(choice?.step)) && Number(choice.step) > 0
+      ? Number(choice.step)
+      : 1;
+  const rawValue = Number.parseInt(String(choice?.value ?? ""), 10);
+  let value = Number.isFinite(rawValue) ? rawValue : min;
+  value = Math.min(max, Math.max(min, value));
+  value = min + Math.round((value - min) / step) * step;
+  value = Math.min(max, Math.max(min, value));
+  return value;
+}
+
+function renderDeviceManagementViews() {
+  portalView.managementUpgradeVisible = deviceManagementUpgradeRequired();
+  portalView.managementUpgradeNote = deviceManagementUpgradeMessage();
+  portalView.alternateManagementVisible = deviceManagementUsesAlternateUi();
+  portalView.alternateManagementNote = portalView.alternateManagementVisible
+    ? alternateDeviceManagementMessage()
+    : "";
+}
+
+function renderAdminDeviceManagementLock() {
+  const isAdmin = hasAdminPanelAccess() && !state.adminPasskeySetupRequired;
+  const lock = deviceManagementLockState();
+  portalView.adminDeviceManagementVersion = lock.requiredFirmwareVersion;
+  portalView.adminDeviceManagementGroups = accessGroupsInputValue(
+    lock.accessGroups,
+  );
+  portalView.adminDeviceManagementNote = deviceManagementAudienceSummary(lock);
+  portalView.adminDeviceManagementDisabled =
+    !isAdmin || state.savingDeviceManagementLock;
+}
+
+function renderManagementConfigViews() {
+  const config = state.lastConfig;
+  const disabled = deviceConfigInputsDisabled();
+
+  if (!config) {
+    portalView.managementModeState =
+      String(state.lastStatus?.operationModeLabel ?? "").trim() || "-";
+    portalView.managementModeSummary =
+      "Choose the feature bundle that matches the vehicle hardware and package on the car.";
+    portalView.managementSelectedModeId = "";
+    portalView.managementModeOptions = [];
+    portalView.managementPayloads = [];
+    portalView.managementChoices = [];
+    portalView.payloadResetAfterOta = false;
+    return;
+  }
+
+  const modeLabel =
+    String(state.lastStatus?.operationModeLabel ?? "").trim() ||
+    String(config?.operationModeLabel ?? "").trim() ||
+    "-";
+  const modeSummary = String(config?.operationModeSummary ?? "").trim();
+  portalView.managementModeState = modeLabel;
+  portalView.managementModeSummary =
+    modeSummary ||
+    "Choose the feature bundle that matches the vehicle hardware and package on the car.";
+  portalView.managementSelectedModeId = String(
+    config?.operationModeId ?? "",
+  ).trim();
+  portalView.managementModeOptions = Array.isArray(config?.modes)
+    ? config.modes.map((mode) => ({
+        id: String(mode?.id ?? "").trim(),
+        label: String(mode?.label ?? "").trim() || "Preset",
+        summary: String(mode?.summary ?? "").trim(),
+      }))
+    : [];
+  portalView.managementPayloads = Array.isArray(config?.payloads)
+    ? config.payloads.map((payload) => ({
+        id: String(payload?.id ?? "").trim(),
+        label: String(payload?.label ?? "").trim() || "Extra payload",
+        summary: String(payload?.summary ?? "").trim(),
+        enabled: Boolean(payload?.enabled),
+        disabled,
+      }))
+    : [];
+  portalView.managementChoices = Array.isArray(config?.choices)
+    ? config.choices.map((choice) => ({
+        id: String(choice?.id ?? "").trim(),
+        label: String(choice?.label ?? "").trim() || "Preset setting",
+        summary: String(choice?.summary ?? "").trim(),
+        value:
+          String(
+            choice?.control === "range"
+              ? normalizedRangeChoiceValue(choice)
+              : choice?.value ?? "",
+          ).trim() || "default",
+        control: choice?.control === "range" ? "range" : "select",
+        disabled,
+        options: Array.isArray(choice?.options)
+          ? choice.options.map((option) => ({
+              id: String(option?.id ?? "").trim(),
+              label: String(option?.label ?? "").trim() || "Choice",
+            }))
+          : [],
+        min: Number.isFinite(Number(choice?.min)) ? Number(choice.min) : 0,
+        max: Number.isFinite(Number(choice?.max))
+          ? Number(choice.max)
+          : Number.isFinite(Number(choice?.min))
+            ? Number(choice.min)
+            : 0,
+        step:
+          Number.isFinite(Number(choice?.step)) && Number(choice.step) > 0
+            ? Number(choice.step)
+            : 1,
+        suffix: String(choice?.suffix ?? "").trim(),
+        showValue: Boolean(choice?.showValue),
+      }))
+    : [];
+  portalView.payloadResetAfterOta = Boolean(config?.payloadsResetAfterOta);
 }
 
 function renderPackages() {
@@ -872,6 +1382,13 @@ function renderPasskeys() {
     return;
   }
 
+  if (!state.passkeysEnabled) {
+    portalView.passkeyNote =
+      state.passkeysDisabledReason || "Passkeys are disabled on this host.";
+    portalView.passkeys = [];
+    return;
+  }
+
   if (state.loadingPasskeys) {
     portalView.passkeyNote = "Loading passkeys...";
     portalView.passkeys = [];
@@ -905,7 +1422,10 @@ function renderPasskeys() {
 }
 
 function renderPackageViews() {
+  renderDeviceManagementViews();
+  renderManagementConfigViews();
   renderPackages();
+  renderAdminDeviceManagementLock();
   renderAdminUsers();
   renderAdminPackages();
   renderPasskeys();
@@ -933,12 +1453,21 @@ function setUpdatingState(updating) {
   renderPackageViews();
 }
 
+function updateOtaUiVisibility() {
+  portalView.otaActivityVisible = Boolean(
+    state.updating ||
+      state.lastStatus?.otaInProgress ||
+      portalView.progressLabel !== "No transfer started",
+  );
+}
+
 function setProgress(current, total, label) {
   const safeTotal = total > 0 ? total : 1;
   const percent = Math.min(100, Math.max(0, (current / safeTotal) * 100));
   portalView.progressPercent = Number(percent.toFixed(1));
   portalView.progressPercentText = `${percent.toFixed(1)}%`;
   portalView.progressLabel = label;
+  updateOtaUiVisibility();
 }
 
 function resetStatusDisplay() {
@@ -948,11 +1477,18 @@ function resetStatusDisplay() {
   portalView.firmwareVersion = "-";
   portalView.canState = "-";
   portalView.hooksState = "-";
+  portalView.managementModeState = "-";
   portalView.profileState = "-";
   portalView.speedOffsetState = "-";
   portalView.fsdFlagState = "-";
   portalView.otaState = "Idle";
   portalView.hooksEnabled = false;
+  portalView.managementSelectedModeId = "";
+  portalView.managementModeOptions = [];
+  portalView.managementPayloads = [];
+  portalView.managementChoices = [];
+  portalView.payloadResetAfterOta = false;
+  portalView.otaActivityVisible = false;
 }
 
 function updateStatusUi(status) {
@@ -969,6 +1505,10 @@ function updateStatusUi(status) {
     ? `Online • ${status.canRxAgeMs ?? 0} ms ago`
     : "No recent frames";
   portalView.hooksState = status.canHooksEnabled ? "Enabled" : "Disabled";
+  portalView.managementModeState =
+    String(status.operationModeLabel ?? "").trim() ||
+    portalView.managementModeState ||
+    "-";
   portalView.profileState = status.profile ?? "-";
   portalView.speedOffsetState = `${status.speedOffsetPercent ?? 0}%`;
   portalView.fsdFlagState = status.fsdFlag ? "Set" : "Clear";
@@ -987,6 +1527,7 @@ function updateStatusUi(status) {
   }
 
   portalView.otaState = otaState;
+  updateOtaUiVisibility();
 
   if (!state.updating) {
     portalView.hooksEnabled = Boolean(status.canHooksEnabled);
@@ -1003,10 +1544,11 @@ function updateConfigUi(config) {
     return;
   }
 
-  state.lastConfig = config;
+  state.lastConfig = normalizeManagementConfig(config);
   if (!state.updating) {
-    portalView.hooksEnabled = Boolean(config.canHooksEnabled);
+    portalView.hooksEnabled = Boolean(state.lastConfig?.canHooksEnabled);
   }
+  renderManagementConfigViews();
 }
 
 async function parseApiError(response) {
@@ -1076,6 +1618,15 @@ async function loadSession() {
   state.user = session.user ?? null;
   state.mustChangePassword = Boolean(session.mustChangePassword);
   state.adminPasskeySetupRequired = Boolean(session.adminPasskeySetupRequired);
+  state.passkeyCount = Number(session.passkeyCount ?? 0);
+  state.passkeysEnabled = session.passkeysEnabled !== false;
+  state.passkeysDisabledReason = String(
+    session.passkeysDisabledReason ?? "",
+  ).trim();
+  state.passwordChangeWithPasskeyAllowed = Boolean(
+    session.passwordChangeWithPasskeyAllowed,
+  );
+  applyDeviceManagementBootstrap(session);
   state.turnstileConfigured = Boolean(
     session.turnstileConfigured || readTurnstileSiteKey(),
   );
@@ -1087,6 +1638,10 @@ async function loadSession() {
   if (!session.hasUsers) {
     portalView.authNote =
       "Access is not available at the moment. Please contact support.";
+  } else if (!state.passkeysEnabled) {
+    portalView.authNote =
+      "If your account was imported from Shopify, your default username is the email address used on your order and your default password is your Shopify order number. If you placed multiple orders, use the first order number. " +
+      (state.passkeysDisabledReason || "Passkeys are disabled on this host.");
   } else {
     portalView.authNote = defaultAuthNote();
   }
@@ -1101,11 +1656,19 @@ async function loadSession() {
       state.packages = [];
       renderPackageViews();
     }
-    await loadPasskeys().catch(() => null);
+    if (state.passkeysEnabled) {
+      await loadPasskeys().catch(() => null);
+    } else {
+      state.passkeys = [];
+      renderPasskeys();
+    }
   } else {
     state.packages = [];
     state.customers = [];
     state.passkeys = [];
+    state.passkeyCount = 0;
+    state.passwordChangeWithPasskeyAllowed = false;
+    applyDeviceManagementBootstrap(null);
     renderPackageViews();
     if (state.connected) {
       await disconnect();
@@ -1278,6 +1841,15 @@ function serializePublicKeyCredential(credential) {
 async function loadPasskeys() {
   if (!state.authenticated) {
     state.passkeys = [];
+    state.passkeyCount = 0;
+    renderPasskeys();
+    return;
+  }
+
+  if (!state.passkeysEnabled) {
+    state.passkeys = [];
+    state.passkeyCount = 0;
+    state.passwordChangeWithPasskeyAllowed = false;
     renderPasskeys();
     return;
   }
@@ -1288,6 +1860,7 @@ async function loadPasskeys() {
   try {
     const payload = await apiJson("./api/passkeys.php");
     state.passkeys = Array.isArray(payload.passkeys) ? payload.passkeys : [];
+    state.passkeyCount = state.passkeys.length;
     state.adminPasskeySetupRequired = Boolean(
       payload.adminPasskeySetupRequired,
     );
@@ -1302,6 +1875,11 @@ async function loadPasskeys() {
 async function registerPasskey() {
   if (!state.authenticated) {
     throw new Error("Sign in before registering a passkey");
+  }
+  if (!state.passkeysEnabled) {
+    throw new Error(
+      state.passkeysDisabledReason || "Passkeys are disabled on this host.",
+    );
   }
   if (!window.PublicKeyCredential || !navigator.credentials?.create) {
     throw new Error("Passkeys are not available in this browser.");
@@ -1355,6 +1933,7 @@ async function deletePasskey(passkey) {
       requireCsrf: true,
     });
     state.passkeys = Array.isArray(payload.passkeys) ? payload.passkeys : [];
+    state.passkeyCount = state.passkeys.length;
     log(`Removed passkey ${passkey.label || "Passkey"}`);
   } finally {
     state.deletingPasskeyId = 0;
@@ -1363,6 +1942,11 @@ async function deletePasskey(passkey) {
 }
 
 async function signInWithPasskey(email = "", promptedByLogin = false) {
+  if (!state.passkeysEnabled) {
+    throw new Error(
+      state.passkeysDisabledReason || "Passkeys are disabled on this host.",
+    );
+  }
   if (!window.PublicKeyCredential || !navigator.credentials?.get) {
     throw new Error("Passkeys are not available in this browser.");
   }
@@ -1417,6 +2001,38 @@ async function loadAdminUsers() {
   } finally {
     state.loadingCustomers = false;
     renderPackageViews();
+  }
+}
+
+async function saveDeviceManagementLock(requiredFirmwareVersion, accessGroups) {
+  if (!hasAdminPanelAccess()) {
+    throw new Error("Admin access is required");
+  }
+
+  state.savingDeviceManagementLock = true;
+  updateAuthUi();
+  portalView.adminDeviceManagementResult = "Saving Device Manager rollout...";
+
+  try {
+    const payload = await apiJson("./api/admin-device-management-lock.php", {
+      method: "POST",
+      body: JSON.stringify({ requiredFirmwareVersion, accessGroups }),
+      headers: { "Content-Type": "application/json" },
+      requireCsrf: true,
+    });
+
+    applyDeviceManagementBootstrap(payload);
+    portalView.adminDeviceManagementResult = state.deviceManagementLock.configured
+      ? `Saved rollout. Required firmware: ${state.deviceManagementLock.requiredFirmwareVersion}. Customer groups: ${accessGroupsSummary(state.deviceManagementLock.accessGroups, "admins only")}.`
+      : "Device Manager rollout disabled. Everyone now stays on the standard view.";
+    renderPackageViews();
+    return payload;
+  } catch (error) {
+    portalView.adminDeviceManagementResult = `Save failed: ${error.message}`;
+    throw error;
+  } finally {
+    state.savingDeviceManagementLock = false;
+    updateAuthUi();
   }
 }
 
@@ -1881,6 +2497,12 @@ function handleDisconnect() {
   if (!hasAdminPanelAccess()) {
     state.packages = [];
   }
+  state.deviceManagementLock = {
+    ...deviceManagementLockState(),
+    mode: "standard",
+    currentFirmwareVersion: "",
+    firmwareSatisfied: null,
+  };
   if (state.authenticated) {
     apiJson("./api/device-context.php", {
       method: "POST",
@@ -1902,16 +2524,18 @@ async function syncDeviceContextForSession(status = state.lastStatus) {
   }
 
   if (!state.connected || !status) {
-    await apiJson("./api/device-context.php", {
+    const payload = await apiJson("./api/device-context.php", {
       method: "POST",
       body: JSON.stringify({ connected: false }),
       headers: { "Content-Type": "application/json" },
       requireCsrf: true,
     });
+    applyDeviceManagementBootstrap(payload);
+    renderPackageViews();
     return;
   }
 
-  await apiJson("./api/device-context.php", {
+  const payload = await apiJson("./api/device-context.php", {
     method: "POST",
     body: JSON.stringify({
       connected: true,
@@ -1925,6 +2549,8 @@ async function syncDeviceContextForSession(status = state.lastStatus) {
     headers: { "Content-Type": "application/json" },
     requireCsrf: true,
   });
+  applyDeviceManagementBootstrap(payload);
+  renderPackageViews();
 }
 
 async function connect() {
@@ -2068,13 +2694,56 @@ async function sendCommand(text, matcher, timeoutMs, options = {}) {
   return await waiter;
 }
 
+async function writeDeviceConfigCommand(command) {
+  if (!state.configCharacteristic) {
+    throw new Error("Connect to the ESP32 first");
+  }
+
+  state.savingDeviceConfig = true;
+  renderPackageViews();
+  try {
+    await writeTextCharacteristic(state.configCharacteristic, command);
+    await refreshStatus();
+  } finally {
+    state.savingDeviceConfig = false;
+    renderPackageViews();
+  }
+}
+
 async function setHooksEnabled(enabled) {
-  await writeTextCharacteristic(
-    state.configCharacteristic,
-    `hooks=${enabled ? 1 : 0}`,
-  );
-  await refreshStatus();
+  await writeDeviceConfigCommand(`hooks=${enabled ? 1 : 0}`);
   log(`CAN hooks ${enabled ? "enabled" : "disabled"}`);
+}
+
+async function setOperationMode(modeId) {
+  const safeModeId = String(modeId ?? "").trim();
+  if (!safeModeId) {
+    throw new Error("Operation mode is required");
+  }
+
+  await writeDeviceConfigCommand(`mode=${safeModeId}`);
+  log(`Operation mode updated: ${safeModeId}`);
+}
+
+async function setMarketingPayloadEnabled(payloadId, enabled) {
+  const safePayloadId = String(payloadId ?? "").trim();
+  if (!safePayloadId) {
+    throw new Error("Payload id is required");
+  }
+
+  await writeDeviceConfigCommand(`payload=${safePayloadId}:${enabled ? 1 : 0}`);
+  log(`Preset payload ${enabled ? "enabled" : "disabled"}: ${safePayloadId}`);
+}
+
+async function setMarketingChoiceValue(choiceId, value) {
+  const safeChoiceId = String(choiceId ?? "").trim();
+  const safeValue = String(value ?? "").trim();
+  if (!safeChoiceId || !safeValue) {
+    throw new Error("Choice id and value are required");
+  }
+
+  await writeDeviceConfigCommand(`setting=${safeChoiceId}:${safeValue}`);
+  log(`Preset setting updated: ${safeChoiceId}=${safeValue}`);
 }
 
 async function rebootDevice() {
@@ -2546,6 +3215,31 @@ export function initPortalController() {
         if (state.lastConfig) {
           portalView.hooksEnabled = Boolean(state.lastConfig.canHooksEnabled);
         }
+        renderManagementConfigViews();
+      }
+    },
+    setOperationMode: async (modeId) => {
+      try {
+        await setOperationMode(modeId);
+      } catch (error) {
+        log(`Preset update failed: ${error.message}`, "error");
+        renderManagementConfigViews();
+      }
+    },
+    setManagementPayloadEnabled: async (payloadId, enabled) => {
+      try {
+        await setMarketingPayloadEnabled(payloadId, enabled);
+      } catch (error) {
+        log(`Payload update failed: ${error.message}`, "error");
+        renderManagementConfigViews();
+      }
+    },
+    setManagementChoiceValue: async (choiceId, value) => {
+      try {
+        await setMarketingChoiceValue(choiceId, value);
+      } catch (error) {
+        log(`Preset setting update failed: ${error.message}`, "error");
+        renderManagementConfigViews();
       }
     },
     abortOta: async () => {
@@ -2615,6 +3309,17 @@ export function initPortalController() {
         log("Customer list refreshed");
       } catch (error) {
         log(`Customer list refresh failed: ${error.message}`, "error");
+      }
+    },
+    saveDeviceManagementLock: async () => {
+      try {
+        await saveDeviceManagementLock(
+          portalView.adminDeviceManagementVersion,
+          portalView.adminDeviceManagementGroups,
+        );
+        log("Device Manager rollout updated");
+      } catch (error) {
+        log(`Device Manager rollout update failed: ${error.message}`, "error");
       }
     },
     createCustomer: async () => {

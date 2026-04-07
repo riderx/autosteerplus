@@ -41,6 +41,59 @@
       class="mt-5 max-h-56 overflow-auto rounded-[22px] border border-[rgba(60,60,67,0.14)] bg-[#111827] px-4 py-4 text-[0.84rem] leading-[1.55] text-[#dbe4ff]"
       >{{ portalView.shopifySyncResult }}</pre
     >
+    <section class="mt-5 grid gap-4 rounded-[22px] border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.94)] px-5 py-5">
+      <div :class="sectionTextStackClass">
+        <p :class="panelLabelClass">Rollout</p>
+        <h3
+          class="m-0 text-[1.2rem] font-semibold leading-[1.12] text-[#111111]"
+        >
+          Device Manager firmware gate
+        </h3>
+      </div>
+      <p :class="mutedTextClass">
+        {{ portalView.adminDeviceManagementNote }}
+      </p>
+      <form
+        class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+        @submit.prevent="portalActions.saveDeviceManagementLock()"
+      >
+        <label :class="inputLabelClass">
+          <span>Required firmware version</span>
+          <input
+            id="admin-device-management-version"
+            v-model="portalView.adminDeviceManagementVersion"
+            type="text"
+            :class="inputClass"
+            autocomplete="off"
+            placeholder="e.g. 2.0.0"
+            :disabled="portalView.adminDeviceManagementDisabled"
+          />
+        </label>
+        <label :class="inputLabelClass">
+          <span>Customer access groups</span>
+          <input
+            id="admin-device-management-groups"
+            v-model="portalView.adminDeviceManagementGroups"
+            type="text"
+            :class="inputClass"
+            autocomplete="off"
+            placeholder="Leave blank for admins only"
+            :disabled="portalView.adminDeviceManagementDisabled"
+          />
+        </label>
+        <div class="flex items-end">
+          <PortalActionButton
+            type="submit"
+            :disabled="portalView.adminDeviceManagementDisabled"
+          >
+            Save Rollout
+          </PortalActionButton>
+        </div>
+      </form>
+      <p id="admin-device-management-result" :class="mutedTextClass">
+        {{ portalView.adminDeviceManagementResult }}
+      </p>
+    </section>
     <div class="mt-5 grid gap-5 xl:grid-cols-2">
       <section class="grid gap-4">
         <div :class="panelHeadingClass">

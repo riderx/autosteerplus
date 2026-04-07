@@ -36,6 +36,7 @@
           class="mt-4 grid gap-4"
           method="post"
           action="./"
+          autocomplete="on"
           @submit.prevent="portalActions.login()"
         >
           <label class="grid gap-2 text-[0.95rem] font-medium text-[#111111]">
@@ -46,6 +47,11 @@
               name="email"
               type="email"
               autocomplete="username"
+              autocapitalize="none"
+              autocorrect="off"
+              inputmode="email"
+              enterkeyhint="next"
+              spellcheck="false"
               class="min-h-12 rounded-[18px] border border-[rgba(60,60,67,0.14)] bg-white px-4 text-[1rem] text-[#111111] outline-none transition focus:border-[rgba(10,96,255,0.35)] focus:ring-2 focus:ring-[rgba(10,96,255,0.14)]"
               required
             />
@@ -58,6 +64,10 @@
               name="password"
               type="password"
               autocomplete="current-password"
+              autocapitalize="none"
+              autocorrect="off"
+              enterkeyhint="done"
+              spellcheck="false"
               class="min-h-12 rounded-[18px] border border-[rgba(60,60,67,0.14)] bg-white px-4 text-[1rem] text-[#111111] outline-none transition focus:border-[rgba(10,96,255,0.35)] focus:ring-2 focus:ring-[rgba(10,96,255,0.14)]"
               required
             />
@@ -104,6 +114,7 @@
           <PortalActionButton
             id="login-passkey-button"
             variant="secondary"
+            :hidden="!portalView.passkeysEnabled"
             @click="portalActions.signInWithPasskey()"
           >
             Use Passkey

@@ -12,8 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.3.0"),
-        .package(name: "CapacitorCommunityBluetoothLe", path: "../../../node_modules/@capacitor-community/bluetooth-le"),
-        .package(name: "CapacitorApp", path: "../../../node_modules/@capacitor/app")
+        .package(path: "../../../node_modules/@capacitor-community/bluetooth-le")
     ],
     targets: [
         .target(
@@ -21,8 +20,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
-                .product(name: "CapacitorCommunityBluetoothLe", package: "CapacitorCommunityBluetoothLe"),
-                .product(name: "CapacitorApp", package: "CapacitorApp")
+                .product(name: "CapacitorCommunityBluetoothLe", package: "bluetooth-le")
             ]
         )
     ]
