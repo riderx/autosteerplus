@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>autosteerplus privacy policy</title>
+    <meta
+      name="description"
+      content="Privacy policy for the autosteerplus website and app."
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f5f7;
+        --card: rgba(255, 255, 255, 0.96);
+        --border: rgba(60, 60, 67, 0.14);
+        --text: #111111;
+        --muted: rgba(60, 60, 67, 0.82);
+        --accent: #0a60ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #f8f8fb 0%, var(--bg) 100%);
+        color: var(--text);
+        font:
+          16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          "Avenir Next", "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(920px, calc(100% - 32px));
+        margin: 0 auto;
+        padding:
+          max(24px, env(safe-area-inset-top)) 0
+          max(24px, env(safe-area-inset-bottom));
+      }
+
+      .card {
+        margin-top: 24px;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: var(--card);
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 12px 28px rgba(15, 23, 42, 0.05);
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+      }
+
+      h1 {
+        font-size: clamp(2.1rem, 5vw, 3.25rem);
+      }
+
+      h2 {
+        font-size: 1.4rem;
+        margin-top: 0;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #6e6e73;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .button-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .button-secondary {
+        background: rgba(10, 96, 255, 0.1);
+        color: var(--accent);
+      }
+
+      ul {
+        margin: 12px 0 0;
+        padding-left: 20px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      @media (max-width: 640px) {
+        .card {
+          padding: 20px;
+          border-radius: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card">
+        <p class="eyebrow">Privacy</p>
+        <h1>autosteerplus privacy policy</h1>
+        <p>
+          This page explains, in simple terms, what autosteerplus handles when
+          you use the hosted website or the mobile app.
+        </p>
+        <p>Last updated: April 7, 2026</p>
+        <div class="actions">
+          <a class="button button-primary" href="https://asp.tslap.store/#/home"
+            >Back to portal</a
+          >
+          <a
+            class="button button-secondary"
+            href="https://github.com/riderx/autosteerplus/tree/main"
+            target="_blank"
+            rel="noreferrer"
+            >GitHub repository</a
+          >
+        </div>
+      </section>
+
+      <section class="card stack">
+        <div>
+          <h2>What autosteerplus is</h2>
+          <p>
+            autosteerplus is a hosted web fork and a mobile app wrapper around
+            the published portal at <code>fsd.teslaandroid.com</code>. The
+            hosted site and app talk to the live portal backend for account,
+            package, and session data.
+          </p>
+        </div>
+
+        <div>
+          <h2>What data is used</h2>
+          <ul>
+            <li>
+              Account sign-in data such as your email address and password, when
+              you sign in.
+            </li>
+            <li>
+              Session cookies and CSRF tokens needed to keep your signed-in
+              session working.
+            </li>
+            <li>
+              Device context such as connected device name, firmware version,
+              and OTA capability, when you connect hardware in the portal.
+            </li>
+            <li>
+              Bluetooth traffic needed for live device management in the app or
+              in supported Web Bluetooth browsers.
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h2>What the site does not try to collect</h2>
+          <ul>
+            <li>
+              No extra advertising profile is built by autosteerplus from your
+              portal usage.
+            </li>
+            <li>
+              No separate analytics layer is intentionally added here beyond the
+              infrastructure already involved in serving the site.
+            </li>
+            <li>
+              Bluetooth permissions are only used for direct device management
+              features.
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h2>Cookies and sessions</h2>
+          <p>
+            The hosted site uses secure session cookies so your login can stay
+            active across page reloads. Those cookies are required for sign-in,
+            account access, and protected portal actions.
+          </p>
+        </div>
+
+        <div>
+          <h2>Bluetooth and device communication</h2>
+          <p>
+            When you connect a device, the portal exchanges data needed to read
+            status, update configuration, and perform OTA operations. On iPhone
+            and Android, the native app is the preferred path because it bridges
+            Bluetooth directly through Capacitor.
+          </p>
+        </div>
+
+        <div>
+          <h2>Third parties involved</h2>
+          <ul>
+            <li>
+              Cloudflare serves the hosted website and Workers infrastructure.
+            </li>
+            <li>
+              The live portal backend remains the source for session and account
+              behavior.
+            </li>
+            <li>
+              Apple App Store / Google Play / Bluefy may be relevant depending
+              on how you access the portal.
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h2>Your choice</h2>
+          <p>
+            If you do not want to use the hosted web fork, you can stop using
+            the site. If you want to end an active session, log out from the
+            portal.
+          </p>
+        </div>
+
+        <div>
+          <h2>Contact</h2>
+          <p>
+            For project-level questions, use the links already provided in the
+            portal, GitHub repository, or Slack community.
+          </p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -3,6 +3,7 @@ const PORTAL_URL = new URL(PORTAL_ORIGIN);
 const PORTAL_BOOTSTRAP_PATH = '/__portal__';
 const YOUTUBE_PLAYER_PATH = '/yt/player/';
 const YOUTUBE_WRAPPER_ORIGIN = 'https://yt.tslap.store';
+const PRIVACY_PATH = '/privacy';
 
 type Env = {
   ASSETS: {
@@ -16,6 +17,10 @@ function isPortalProxyPath(pathname: string): boolean {
 
 function isYouTubePlayerPath(pathname: string): boolean {
   return pathname.startsWith(YOUTUBE_PLAYER_PATH);
+}
+
+function isPrivacyPath(pathname: string): boolean {
+  return pathname === PRIVACY_PATH || pathname === `${PRIVACY_PATH}/`;
 }
 
 function toPortalUrl(requestUrl: URL): URL {
@@ -64,6 +69,12 @@ function redirectToYouTubeWorker(requestUrl: URL): Response {
   });
 }
 
+function servePrivacyPage(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const assetUrl = new URL(`${PRIVACY_PATH}/index.html`, url);
+  return env.ASSETS.fetch(new Request(assetUrl.toString(), request));
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -74,6 +85,10 @@ export default {
 
     if (isYouTubePlayerPath(url.pathname)) {
       return redirectToYouTubeWorker(url);
+    }
+
+    if (isPrivacyPath(url.pathname)) {
+      return servePrivacyPage(request, env);
     }
 
     return env.ASSETS.fetch(request);
