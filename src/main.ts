@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import { Capacitor } from "@capacitor/core";
+import { CapacitorUpdater } from "@capgo/capacitor-updater";
 import App from "./App.vue";
 import "./features/portal/theme.css";
 import {
@@ -36,6 +37,7 @@ async function bootstrapEnvironment(): Promise<void> {
   document.documentElement.dataset.platform = Capacitor.getPlatform();
 
   if (Capacitor.isNativePlatform()) {
+    await CapacitorUpdater.notifyAppReady();
     installPortalFetchBridge();
     await bootstrapPortalSession();
     installWebBluetoothShim();
