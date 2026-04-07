@@ -189,6 +189,8 @@ Notes:
 - Capacitor Android is pinned alongside the other Capacitor packages
 - the Bluetooth LE plugin is synced into the Android project during `cap:sync`
 
+sign with android.jks the key and passwords are all: autosteerplus
+
 ## Web Deployment
 
 The repo includes a Cloudflare Workers static-assets deploy config for:
