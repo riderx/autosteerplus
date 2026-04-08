@@ -11,7 +11,13 @@
         id="login-panel"
         class="relative overflow-hidden rounded-[22px] border border-[rgba(60,60,67,0.14)] bg-[rgba(255,255,255,0.98)] p-[1.15rem] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_rgba(15,23,42,0.05)]"
       >
-        <div class="grid gap-3">
+        <div class="grid justify-items-center gap-3 text-center">
+          <img
+            src="../../../assets/applus_logo.jpg"
+            alt="autosteerplus logo"
+            class="h-20 w-20 rounded-[18px] object-contain"
+            loading="lazy"
+          />
           <h1
             class="m-0 whitespace-nowrap text-[clamp(2.1rem,5vw,3.25rem)] leading-[0.96] tracking-[-0.03em] text-[#111111]"
           >
@@ -127,9 +133,9 @@
           <p
             class="m-0 text-[0.95rem] leading-[1.5] text-[rgba(60,60,67,0.82)]"
           >
-            You are using the web fork of `fsd.teslaandroid.com`. Bluetooth
-            control only works in Web Bluetooth compatible browsers. On iPhone
-            or iPad, use the autosteerplus app or Bluefy.
+            You are using the web version. Bluetooth control only works in Web
+            Bluetooth compatible browsers. On iPhone or iPad, use the
+            autosteerplus app or Bluefy.
           </p>
           <div class="flex flex-wrap items-center gap-3">
             <PortalActionButton

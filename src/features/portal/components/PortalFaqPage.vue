@@ -356,11 +356,11 @@ const faqSections: FaqSection[] = [
       {
         question: "How do I control or update the device?",
         paragraphs: [
-          "Use the web interface at fsd.teslaandroid.com.",
+          "Use the web interface at asp.tslap.store.",
           "That requires a Web Bluetooth compatible browser. Chrome works on Windows, Linux, Android and macOS. On iOS, Bluefy works while Safari and most other browsers do not.",
         ],
         links: [
-          { label: "Web interface", url: "https://fsd.teslaandroid.com" },
+          { label: "Web interface", url: "https://asp.tslap.store" },
           {
             label: "Bluefy on App Store",
             url: "https://apps.apple.com/app/id1492822055",

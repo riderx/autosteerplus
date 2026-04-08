@@ -57,33 +57,6 @@
           </div>
           <div :class="detailGridClass">
             <article :class="nestedCardClass">
-              <span :class="panelLabelClass">Portal origin</span>
-              <strong>This site is a fork of `fsd.teslaandroid.com`</strong>
-              <p :class="mutedTextClass">
-                autosteerplus keeps the same portal workflow, then packages it
-                as a dedicated app and hosted web fork so you can manage the
-                device from either environment.
-              </p>
-              <div :class="actionRowClass">
-                <PortalActionButton
-                  variant="ghost"
-                  href="https://fsd.teslaandroid.com"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Original portal
-                </PortalActionButton>
-                <PortalActionButton
-                  variant="ghost"
-                  href="https://github.com/riderx/autosteerplus/tree/main"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  GitHub repo
-                </PortalActionButton>
-              </div>
-            </article>
-            <article :class="nestedCardClass">
               <span :class="panelLabelClass">Browser support</span>
               <strong>Use the app, or Bluefy on iPhone and iPad</strong>
               <p :class="mutedTextClass">
