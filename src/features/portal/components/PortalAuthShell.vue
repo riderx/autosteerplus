@@ -43,7 +43,7 @@
           method="post"
           action="./"
           autocomplete="on"
-          @submit.prevent="portalActions.login()"
+          @submit.prevent="handleLoginSubmit"
         >
           <label class="grid gap-2 text-[0.95rem] font-medium text-[#111111]">
             <span>Email</span>
@@ -126,6 +126,14 @@
             Use Passkey
           </PortalActionButton>
         </form>
+        <label class="mt-3 flex items-center gap-2 text-[0.95rem] text-[rgba(60,60,67,0.82)]">
+          <input
+            v-model="rememberLogin"
+            type="checkbox"
+            class="h-4 w-4 rounded border border-[rgba(60,60,67,0.3)]"
+          />
+          Remember sign-in on this device
+        </label>
         <div
           v-if="!isNativeApp"
           class="mt-5 grid gap-3 rounded-[18px] border border-[rgba(10,96,255,0.12)] bg-[rgba(10,96,255,0.04)] px-4 py-3"
@@ -163,19 +171,55 @@
           FAQ
         </PortalActionButton>
       </div>
+      <div class="px-1 pb-safe-2 pt-2 text-center text-[0.78rem] font-medium tracking-[-0.01em] text-[rgba(60,60,67,0.62)]">
+        autosteerplus v{{ appVersion }}
+      </div>
     </div>
   </k-page>
 </template>
 
 <script setup lang="ts">
 import { Capacitor } from "@capacitor/core";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { kCard, kPage } from "konsta/vue";
 
 import PortalActionButton from "./PortalActionButton.vue";
 import { portalActions, portalView } from "../view-model";
+import { APP_VERSION } from "../../../app-version";
 
 const isNativeApp = Capacitor.isNativePlatform();
 const bluefyUrl = "https://apps.apple.com/app/id1492822055";
 const showLoginHelp = ref(false);
+const appVersion = APP_VERSION;
+const rememberLogin = ref(false);
+
+const STORAGE_KEY = "autosteerplus_login";
+
+const handleLoginSubmit = () => {
+  if (rememberLogin.value) {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        email: portalView.loginEmail,
+        password: portalView.loginPassword,
+      }),
+    );
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  portalActions.login();
+};
+
+onMounted(() => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as { email?: string; password?: string };
+    if (parsed.email) portalView.loginEmail = parsed.email;
+    if (parsed.password) portalView.loginPassword = parsed.password;
+    rememberLogin.value = Boolean(parsed.email || parsed.password);
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+});
 </script>

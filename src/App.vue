@@ -13,11 +13,6 @@
       <PortalDocsPage />
       <PortalOnboardingPage />
       <PortalFaqPage />
-      <div
-        class="px-safe-1 pb-safe-2 pt-3 text-center text-[0.78rem] font-medium tracking-[-0.01em] text-[rgba(60,60,67,0.62)]"
-      >
-        autosteerplus v{{ appVersion }}
-      </div>
     </div>
   </k-app>
 </template>
@@ -31,7 +26,6 @@ import PortalDashboardPage from "./features/portal/components/PortalDashboardPag
 import PortalDocsPage from "./features/portal/components/PortalDocsPage.vue";
 import PortalFaqPage from "./features/portal/components/PortalFaqPage.vue";
 import PortalOnboardingPage from "./features/portal/components/PortalOnboardingPage.vue";
-import { APP_VERSION } from "./app-version";
 
 const safeAreaVars = {
   "--k-safe-area-top":
@@ -43,8 +37,6 @@ const safeAreaVars = {
   "--k-safe-area-left":
     "var(--safe-area-inset-left, env(safe-area-inset-left, 0px))",
 };
-const appVersion = APP_VERSION;
-
 onMounted(async () => {
   const { initPortalController } = await import("./features/portal/controller");
   initPortalController();
